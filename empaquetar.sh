@@ -66,10 +66,25 @@ echo ""
 echo -e "${YELLOW}📦 Paso 2: Empaquetando con Electron...${NC}"
 cd electron
 
-# Verificar si electron-builder está instalado
-if ! npm list electron-builder >/dev/null 2>&1; then
-    echo "⚠️  electron-builder no está instalado. Instalando..."
+# Verificar Node.js y npm
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: Node.js no encontrado. Instala Node.js desde https://nodejs.org/"
+    exit 1
+fi
+
+if ! command -v npm &> /dev/null; then
+    echo "❌ Error: npm no encontrado. Instala npm junto con Node.js"
+    exit 1
+fi
+
+# Verificar si electron-builder está instalado o si node_modules no existe
+if [ ! -d "node_modules" ] || ! npm list electron-builder >/dev/null 2>&1; then
+    echo "⚠️  Instalando dependencias de Electron..."
     npm install
+    if [ $? -ne 0 ]; then
+        echo "❌ Error: Falló la instalación de dependencias de Electron"
+        exit 1
+    fi
 fi
 
 # Empaquetar AppImage

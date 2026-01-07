@@ -60,10 +60,34 @@ echo [2/2] Empaquetando aplicacion Electron (instalador Windows)...
 
 CD electron
 
-REM Verificar dependencias de Electron
+REM Verificar Node.js y npm
+where node >nul 2>&1
+IF ERRORLEVEL 1 (
+    echo   ERROR: Node.js no encontrado. Instala Node.js desde https://nodejs.org/
+    EXIT /B 1
+)
+
+REM Verificar si electron-builder está instalado
+npm list electron-builder >nul 2>&1
+IF ERRORLEVEL 1 (
+    echo   electron-builder no encontrado. Instalando dependencias...
+    npm install
+    IF ERRORLEVEL 1 (
+        echo   ERROR: Fallo la instalacion de dependencias de Electron
+        EXIT /B 1
+    )
+) ELSE (
+    echo   Dependencias de Electron ya instaladas.
+)
+
+REM Verificar que node_modules existe
 IF NOT EXIST "node_modules" (
     echo   Instalando dependencias de Electron...
     npm install
+    IF ERRORLEVEL 1 (
+        echo   ERROR: Fallo la instalacion de dependencias
+        EXIT /B 1
+    )
 )
 
 echo   Ejecutando electron-builder para Windows...
@@ -71,6 +95,7 @@ npm run build:win
 IF ERRORLEVEL 1 (
     echo.
     echo   ERROR: Fallo electron-builder (npm run build:win)
+    echo   Verifica que todas las dependencias esten instaladas: npm install
     EXIT /B 1
 )
 
