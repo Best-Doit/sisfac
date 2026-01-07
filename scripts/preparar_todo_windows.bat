@@ -43,30 +43,70 @@ echo [3/3] Verificacion final...
 echo.
 
 REM Verificar Python en venv
-echo Verificando Python en entorno virtual...
-CALL venv\Scripts\activate.bat
-python --version
-python -c "import flask; print('Flask:', flask.__version__)" 2>NUL
-python -c "import PyInstaller; print('PyInstaller: OK')" 2>NUL
-deactivate 2>NUL
+IF EXIST "venv\Scripts\activate.bat" (
+    echo Verificando Python en entorno virtual...
+    CALL venv\Scripts\activate.bat
+    IF NOT ERRORLEVEL 1 (
+        REM Intentar múltiples formas de ejecutar Python
+        SET PYTHON_VERIFY_CMD=
+        python --version >nul 2>&1
+        IF NOT ERRORLEVEL 1 (
+            SET PYTHON_VERIFY_CMD=python
+        ) ELSE (
+            py --version >nul 2>&1
+            IF NOT ERRORLEVEL 1 (
+                SET PYTHON_VERIFY_CMD=py
+            ) ELSE (
+                py -3 --version >nul 2>&1
+                IF NOT ERRORLEVEL 1 (
+                    SET PYTHON_VERIFY_CMD=py -3
+                )
+            )
+        )
+        
+        IF DEFINED PYTHON_VERIFY_CMD (
+            !PYTHON_VERIFY_CMD! --version 2>NUL
+            !PYTHON_VERIFY_CMD! -c "import flask; print('Flask:', flask.__version__)" 2>NUL || echo   Flask: No encontrado
+            !PYTHON_VERIFY_CMD! -c "import PyInstaller; print('PyInstaller: OK')" 2>NUL || echo   PyInstaller: No encontrado
+        ) ELSE (
+            echo   ADVERTENCIA: No se pudo verificar Python en el entorno virtual.
+        )
+        CALL venv\Scripts\deactivate.bat 2>NUL
+    ) ELSE (
+        echo   ADVERTENCIA: No se pudo activar el entorno virtual para verificar.
+    )
+) ELSE (
+    echo   ADVERTENCIA: Entorno virtual no encontrado.
+    echo   Ejecuta primero: scripts\preparar_entorno_windows.bat
+)
 
 echo.
 echo Verificando Node.js:
-node --version 2>NUL || echo   Node.js no encontrado en PATH
+where node >nul 2>&1
+IF NOT ERRORLEVEL 1 (
+    node --version
+) ELSE (
+    echo   Node.js no encontrado en PATH
+)
 
 echo.
 echo Verificando Electron:
-CD electron
-IF ERRORLEVEL 1 (
-    echo   ERROR: No se pudo cambiar al directorio electron
-    EXIT /B 1
-)
-npm list electron --depth=0 2>NUL || echo   Electron no encontrado
-npm list electron-builder --depth=0 2>NUL || echo   electron-builder no encontrado
-CD ..
-IF ERRORLEVEL 1 (
-    echo   ERROR: No se pudo volver al directorio raiz
-    EXIT /B 1
+IF EXIST "electron" (
+    CD electron
+    IF NOT ERRORLEVEL 1 (
+        IF EXIST "node_modules" (
+            npm list electron --depth=0 2>NUL || echo   Electron: No encontrado en node_modules
+            npm list electron-builder --depth=0 2>NUL || echo   electron-builder: No encontrado en node_modules
+        ) ELSE (
+            echo   node_modules no existe. Ejecuta: npm install
+        )
+        CD ..
+    ) ELSE (
+        echo   ERROR: No se pudo cambiar al directorio electron
+        EXIT /B 1
+    )
+) ELSE (
+    echo   ADVERTENCIA: Directorio electron no encontrado.
 )
 
 echo.

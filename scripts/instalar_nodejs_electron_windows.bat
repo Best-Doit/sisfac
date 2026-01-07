@@ -85,10 +85,15 @@ IF ERRORLEVEL 1 (
 
 echo   Limpiando instalacion anterior (si existe)...
 IF EXIST "node_modules" (
-    RMDIR /S /Q node_modules
+    echo   Eliminando node_modules anterior...
+    RMDIR /S /Q node_modules 2>NUL
+    IF EXIST "node_modules" (
+        echo   ADVERTENCIA: No se pudo eliminar node_modules completamente.
+        echo   Algunos archivos pueden estar en uso. Continuando...
+    )
 )
 IF EXIST "package-lock.json" (
-    DEL /F /Q package-lock.json
+    DEL /F /Q package-lock.json 2>NUL
 )
 
 echo   Instalando dependencias de Electron (esto puede tardar unos minutos)...
@@ -102,11 +107,33 @@ IF ERRORLEVEL 1 (
 REM Verificar instalacion
 echo.
 echo Verificando instalacion...
-npm list electron
-npm list electron-builder
-
-IF ERRORLEVEL 1 (
-    echo   ERROR: Electron no se instalo correctamente.
+IF EXIST "node_modules" (
+    npm list electron --depth=0 2>NUL
+    IF ERRORLEVEL 1 (
+        echo   ADVERTENCIA: Electron no aparece en la lista de dependencias.
+        echo   Pero puede estar instalado. Verificando archivos...
+    )
+    
+    IF EXIST "node_modules\electron" (
+        echo   Electron: Instalado correctamente
+    ) ELSE (
+        echo   ERROR: Electron no se instalo correctamente.
+        EXIT /B 1
+    )
+    
+    npm list electron-builder --depth=0 2>NUL
+    IF ERRORLEVEL 1 (
+        echo   ADVERTENCIA: electron-builder no aparece en la lista de dependencias.
+    )
+    
+    IF EXIST "node_modules\electron-builder" (
+        echo   electron-builder: Instalado correctamente
+    ) ELSE (
+        echo   ERROR: electron-builder no se instalo correctamente.
+        EXIT /B 1
+    )
+) ELSE (
+    echo   ERROR: node_modules no existe despues de la instalacion.
     EXIT /B 1
 )
 
@@ -116,13 +143,21 @@ echo   Instalacion completada!
 echo ================================
 echo.
 echo Node.js: 
-node --version
+node --version 2>NUL || echo   No disponible
 echo npm:
-npm --version
+npm --version 2>NUL || echo   No disponible
 echo Electron:
-npm list electron --depth=0
+IF EXIST "node_modules\electron" (
+    npm list electron --depth=0 2>NUL || echo   Instalado (verificacion de version fallida)
+) ELSE (
+    echo   No encontrado
+)
 echo electron-builder:
-npm list electron-builder --depth=0
+IF EXIST "node_modules\electron-builder" (
+    npm list electron-builder --depth=0 2>NUL || echo   Instalado (verificacion de version fallida)
+) ELSE (
+    echo   No encontrado
+)
 echo.
 echo Puedes empaquetar la aplicacion con:
 echo   scripts\empaquetar_windows.bat

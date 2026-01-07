@@ -50,20 +50,22 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "category": "Office",
       "icon": "build/icon.png",
-      "executableName": "sisfac-desktop"
+      "executableName": "sisfac-desktop",
+      "synopsis": "Sistema de Facturación",
+      "description": "Sistema de Facturación y Gestión de Inventario"
     },
     "appImage": {
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "${productName}-${version}.${ext}",
+      "desktop": {
+        "Name": "SISFAC",
+        "Comment": "Sistema de Facturación y Gestión de Inventario",
+        "Type": "Application",
+        "Categories": "Office;"
+      }
     },
     "afterPack": "./build/afterPack.js",
     "win": {
