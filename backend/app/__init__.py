@@ -9,7 +9,8 @@ def create_app():
     
     # Configuración
     basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    # SECRET_KEY: Cambiar en producción por seguridad
+    app.config['SECRET_KEY'] = 'sisfac-secret-key-change-in-production-2024'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "..", "..", "sisfac.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
