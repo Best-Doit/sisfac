@@ -23,7 +23,230 @@ La interfaz está construida con Flask (templates Jinja2), Tailwind CSS y Alpine
 - Python 3.9+ (recomendado: 3.12)
 - Node.js y npm (para empaquetado con Electron)
 
-## 🔧 Instalación
+## 📦 Instalación de Node.js y Electron
+
+### 🪟 Windows
+
+**1. Instalar Node.js:**
+
+**Opción A: Descarga directa (Recomendado)**
+1. Visita: https://nodejs.org/
+2. Descarga la versión LTS (Long Term Support)
+3. Ejecuta el instalador `.msi`
+4. Acepta todas las opciones por defecto (incluye npm automáticamente)
+5. Reinicia la terminal/PowerShell
+
+**Opción B: Usando Chocolatey**
+```cmd
+choco install nodejs-lts
+```
+
+**2. Verificar instalación:**
+```cmd
+node --version
+npm --version
+```
+
+**3. Instalar Electron en el proyecto:**
+```cmd
+cd electron
+npm install
+```
+
+Esto instalará:
+- `electron` (versión 28.0.0)
+- `electron-builder` (versión 24.13.3)
+
+**4. Comandos útiles de Electron:**
+```cmd
+# Iniciar aplicación en modo desarrollo
+npm start
+
+# Empaquetar para Windows
+npm run build:win
+
+# Empaquetar para Linux
+npm run build:linux
+
+# Empaquetar para macOS
+npm run build:mac
+
+# Empaquetar AppImage (Linux)
+npm run dist
+```
+
+### 🐧 Linux
+
+**1. Instalar Node.js y npm:**
+
+**Opción A: Usando el gestor de paquetes (Ubuntu/Debian)**
+```bash
+# Actualizar lista de paquetes
+sudo apt update
+
+# Instalar Node.js y npm
+sudo apt install nodejs npm
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+**Opción B: Usando NodeSource (versión más reciente)**
+```bash
+# Instalar Node.js 20.x LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+**Opción C: Usando nvm (Node Version Manager) - Recomendado**
+```bash
+# Instalar nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Recargar configuración
+source ~/.bashrc
+
+# Instalar Node.js LTS
+nvm install --lts
+nvm use --lts
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+**2. Instalar Electron en el proyecto:**
+```bash
+cd electron
+npm install
+```
+
+**3. Comandos útiles de Electron:**
+```bash
+# Iniciar aplicación en modo desarrollo
+npm start
+
+# Empaquetar para Linux (AppImage)
+npm run dist
+
+# Empaquetar para Windows
+npm run build:win
+
+# Empaquetar para macOS
+npm run build:mac
+```
+
+### 🍎 macOS
+
+**1. Instalar Node.js y npm:**
+
+**Opción A: Descarga directa**
+1. Visita: https://nodejs.org/
+2. Descarga la versión LTS para macOS
+3. Ejecuta el instalador `.pkg`
+4. Sigue las instrucciones del instalador
+
+**Opción B: Usando Homebrew (Recomendado)**
+```bash
+# Instalar Homebrew si no lo tienes
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Instalar Node.js (incluye npm)
+brew install node
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+**Opción C: Usando nvm (Node Version Manager)**
+```bash
+# Instalar nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Recargar configuración
+source ~/.zshrc
+
+# Instalar Node.js LTS
+nvm install --lts
+nvm use --lts
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+**2. Instalar Electron en el proyecto:**
+```bash
+cd electron
+npm install
+```
+
+**3. Comandos útiles de Electron:**
+```bash
+# Iniciar aplicación en modo desarrollo
+npm start
+
+# Empaquetar para macOS
+npm run build:mac
+
+# Empaquetar para Windows
+npm run build:win
+
+# Empaquetar para Linux
+npm run build:linux
+```
+
+### ✅ Verificar que todo funciona
+
+Después de instalar Node.js y Electron, verifica:
+
+```bash
+# Verificar Node.js
+node --version
+# Debería mostrar: v20.x.x o superior
+
+# Verificar npm
+npm --version
+# Debería mostrar: 10.x.x o superior
+
+# Verificar Electron (desde el directorio electron/)
+cd electron
+npm list electron
+# Debería mostrar: electron@28.0.0
+
+# Verificar electron-builder
+npm list electron-builder
+# Debería mostrar: electron-builder@24.13.3
+```
+
+### 🔧 Solución de problemas
+
+**Problema: "node: command not found"**
+- **Windows:** Reinicia la terminal o PowerShell después de instalar Node.js
+- **Linux/macOS:** Verifica que Node.js esté en PATH: `which node`
+
+**Problema: "npm: command not found"**
+- **Windows:** npm viene incluido con Node.js, reinstala Node.js
+- **Linux:** Instala npm por separado: `sudo apt install npm`
+- **macOS:** Reinstala Node.js o usa Homebrew: `brew install node`
+
+**Problema: "Error al instalar Electron"**
+- Limpia la caché de npm: `npm cache clean --force`
+- Elimina `node_modules` y `package-lock.json`: `rm -rf node_modules package-lock.json`
+- Reinstala: `npm install`
+
+**Problema: "Permission denied" en Linux/macOS**
+- No uses `sudo` con npm (puede causar problemas)
+- Si es necesario, configura npm para usar otro directorio: `npm config set prefix ~/.npm-global`
+- Agrega a PATH: `export PATH=~/.npm-global/bin:$PATH`
+
+## 🔧 Instalación del Proyecto
 
 ### 🐧 Linux/macOS
 
