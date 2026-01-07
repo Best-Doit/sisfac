@@ -25,12 +25,19 @@ La interfaz está construida con Flask (templates Jinja2), Tailwind CSS y Alpine
 
 ## 🔧 Instalación
 
+### Opción 1: Instalación Manual
+
 1. Clonar o descargar el proyecto
 
 2. Crear y activar el entorno virtual:
 ```bash
+# Linux/macOS
 python3 -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+source venv/bin/activate
+
+# Windows
+python -m venv venv
+venv\Scripts\activate
 ```
 
 3. Instalar dependencias:
@@ -44,17 +51,63 @@ cd backend
 python run.py
 ```
 
-O usar el script de inicio:
-```bash
-./start.sh
-```
-
 5. Abrir en el navegador:
 ```
 http://localhost:5000
 ```
 
-**Nota:** Asegúrate de tener el entorno virtual activado antes de ejecutar la aplicación.
+### Opción 2: Usar Scripts Automáticos
+
+#### 🐧 Linux/macOS
+
+**Iniciar la aplicación:**
+```bash
+./start.sh
+```
+Este script:
+- Crea el entorno virtual si no existe
+- Instala dependencias automáticamente
+- Inicia el servidor Flask
+- Abre en `http://localhost:5000`
+
+**Empaquetar la aplicación (Backend + Electron):**
+```bash
+./empaquetar.sh
+```
+Este script:
+- Compila el backend con PyInstaller
+- Empaqueta la aplicación con Electron
+- Genera un AppImage ejecutable en `electron/dist/SISFAC-1.0.0.AppImage`
+
+#### 🪟 Windows
+
+**Preparar el entorno:**
+```bash
+scripts\preparar_entorno_windows.bat
+```
+Este script:
+- Crea el entorno virtual (`venv`) si no existe
+- Instala todas las dependencias desde `requirements.txt`
+- Prepara el entorno para desarrollo
+
+**Iniciar la aplicación:**
+Después de preparar el entorno:
+```bash
+venv\Scripts\activate
+cd backend
+python run.py
+```
+
+**Empaquetar la aplicación (Backend + Electron):**
+```bash
+scripts\empaquetar_windows.bat
+```
+Este script:
+- Compila el backend con PyInstaller (genera `backend\dist\sisfac-backend.exe`)
+- Empaqueta la aplicación con Electron
+- Genera un instalador Windows en `electron\dist\SISFAC Setup 1.0.0.exe`
+
+**Nota:** Asegúrate de tener el entorno virtual activado antes de ejecutar la aplicación manualmente.
 
 ## 📁 Estructura del Proyecto
 
