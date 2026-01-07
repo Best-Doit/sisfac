@@ -144,7 +144,6 @@ SISFAC/
 │   ├── preparar_entorno_windows.bat  # Preparar entorno en Windows
 │   └── empaquetar_windows.bat        # Empaquetar aplicación en Windows
 ├── requirements.txt           # Dependencias Python
-├── CHANGELOG.md               # Registro de cambios y mejoras
 └── README.md                  # Este archivo
 ```
 

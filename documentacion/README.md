@@ -141,9 +141,14 @@ Documentación completa de la API:
 ## 📝 Cambios Recientes
 
 ### [Cambios Recientes y Mejoras](./CAMBIOS_RECIENTES.md)
-**Documento de Actualizaciones**
+**Documento de Actualizaciones (Actualizado)**
 
 Este documento describe los cambios, mejoras y nuevas funcionalidades implementadas recientemente:
+
+### [Changelog Histórico](./CHANGELOG.md)
+**Registro de Cambios (Versión anterior)**
+
+Documento histórico con cambios y mejoras anteriores del sistema.
 - ✅ Funcionalidad de anulación de facturas con reversión de stock
 - ✅ Mejoras en la tabla de facturación (controles de cantidad con botones +/-, dropdown de precios mejorado)
 - ✅ Optimizaciones de layout (sin scroll en pantalla principal, tabla ocupa todo el espacio)
