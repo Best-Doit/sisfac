@@ -78,24 +78,25 @@ REM Paso 3: Instalar Electron
 echo.
 echo [3/3] Instalando Electron y dependencias...
 CD electron
+IF ERRORLEVEL 1 (
+    echo   ERROR: No se pudo cambiar al directorio electron
+    EXIT /B 1
+)
 
-IF NOT EXIST "node_modules" (
-    echo   Instalando dependencias de Electron...
-    npm install
-    IF ERRORLEVEL 1 (
-        echo   ERROR: Fallo la instalacion de Electron.
-        echo   Intenta manualmente: cd electron ^&^& npm install
-        EXIT /B 1
-    )
-) ELSE (
-    echo   Verificando dependencias de Electron...
-    npm list electron >nul 2>&1
-    IF ERRORLEVEL 1 (
-        echo   Instalando dependencias faltantes...
-        npm install
-    ) ELSE (
-        echo   Electron ya esta instalado.
-    )
+echo   Limpiando instalacion anterior (si existe)...
+IF EXIST "node_modules" (
+    RMDIR /S /Q node_modules
+)
+IF EXIST "package-lock.json" (
+    DEL /F /Q package-lock.json
+)
+
+echo   Instalando dependencias de Electron (esto puede tardar unos minutos)...
+npm install
+IF ERRORLEVEL 1 (
+    echo   ERROR: Fallo la instalacion de Electron.
+    echo   Intenta manualmente: cd electron ^&^& npm install
+    EXIT /B 1
 )
 
 REM Verificar instalacion

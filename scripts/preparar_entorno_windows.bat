@@ -41,7 +41,7 @@ IF NOT EXIST "venv" (
         EXIT /B 1
     )
 ) ELSE (
-    echo [1/3] Entorno virtual 'venv' ya existe.
+    echo [1/3] Entorno virtual 'venv' ya existe. Verificando...
 )
 
 echo [2/3] Activando entorno virtual...
@@ -52,17 +52,27 @@ IF ERRORLEVEL 1 (
 )
 
 echo [3/3] Instalando dependencias desde requirements.txt...
-python -m pip install --upgrade pip
+echo   Actualizando pip...
+python -m pip install --upgrade pip --quiet
 IF ERRORLEVEL 1 (
     echo   ERROR: No se pudo actualizar pip.
     EXIT /B 1
 )
 
+echo   Instalando dependencias (esto puede tardar unos minutos)...
 python -m pip install -r requirements.txt
 IF ERRORLEVEL 1 (
     echo   ERROR: Fallo la instalacion de dependencias.
     echo   Intenta manualmente: python -m pip install -r requirements.txt
     EXIT /B 1
+)
+
+echo   Verificando instalacion...
+python -c "import flask; import sqlalchemy; import flask_sqlalchemy; import openpyxl; import reportlab; import dateutil; import PyInstaller" 2>NUL
+IF ERRORLEVEL 1 (
+    echo   ADVERTENCIA: Algunas dependencias pueden no estar instaladas correctamente.
+    echo   Reintentando instalacion...
+    python -m pip install -r requirements.txt --force-reinstall --no-cache-dir
 )
 
 echo.
