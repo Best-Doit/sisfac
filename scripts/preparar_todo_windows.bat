@@ -45,8 +45,16 @@ node --version
 echo.
 echo Electron:
 CD electron
+IF ERRORLEVEL 1 (
+    echo   ERROR: No se pudo cambiar al directorio electron
+    EXIT /B 1
+)
 npm list electron --depth=0
 CD ..
+IF ERRORLEVEL 1 (
+    echo   ERROR: No se pudo volver al directorio raiz
+    EXIT /B 1
+)
 
 echo.
 echo ================================

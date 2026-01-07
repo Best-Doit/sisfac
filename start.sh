@@ -15,10 +15,18 @@ fi
 echo "🔌 Activando entorno virtual..."
 source venv/bin/activate
 
+# Actualizar pip
+echo "📦 Actualizando pip..."
+pip install --upgrade pip --quiet
+
 # Verificar si las dependencias están instaladas
 if ! python -c "import flask" 2>/dev/null; then
     echo "📦 Instalando dependencias..."
     pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo "❌ Error: Falló la instalación de dependencias"
+        exit 1
+    fi
 fi
 
 # Cambiar al directorio backend

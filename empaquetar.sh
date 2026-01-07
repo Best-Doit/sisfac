@@ -17,7 +17,8 @@ echo -e "${YELLOW}📦 Paso 1: Recompilando backend con PyInstaller...${NC}"
 
 # Detectar y activar entorno virtual
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_PATH="$SCRIPT_DIR/venv"
+ROOT_DIR="$SCRIPT_DIR"
+VENV_PATH="$ROOT_DIR/venv"
 
 if [ -d "$VENV_PATH" ]; then
     echo "🔧 Activando entorno virtual..."

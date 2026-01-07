@@ -25,22 +25,35 @@ cd "$ROOT_DIR"
 
 # Paso 1: Python
 echo -e "${YELLOW}[1/3] Preparando Python...${NC}"
-bash "$SCRIPT_DIR/../start.sh" --setup-only 2>/dev/null || {
-    # Si start.sh no tiene opción --setup-only, hacerlo manualmente
-    if [ ! -d "venv" ]; then
-        echo "  Creando entorno virtual..."
-        python3 -m venv venv
+if [ ! -d "venv" ]; then
+    echo "  Creando entorno virtual..."
+    python3 -m venv venv
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  ERROR: No se pudo crear el entorno virtual${NC}"
+        exit 1
     fi
-    
-    source venv/bin/activate
-    
-    if ! python -c "import flask" 2>/dev/null; then
-        echo "  Instalando dependencias Python..."
-        pip install -r requirements.txt
+fi
+
+source venv/bin/activate
+
+# Actualizar pip
+echo "  Actualizando pip..."
+pip install --upgrade pip --quiet
+
+# Verificar e instalar dependencias
+if ! python -c "import flask" 2>/dev/null; then
+    echo "  Instalando dependencias Python..."
+    pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  ERROR: Fallo la instalacion de dependencias${NC}"
+        deactivate 2>/dev/null || true
+        exit 1
     fi
-    
-    deactivate 2>/dev/null || true
-}
+else
+    echo "  Dependencias Python ya instaladas."
+fi
+
+deactivate 2>/dev/null || true
 
 # Paso 2: Node.js y Electron
 echo ""

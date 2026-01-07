@@ -22,11 +22,11 @@ IF EXIST "%VENV_DIR%\Scripts\activate.bat" (
     echo   Activando entorno virtual...
     CALL "%VENV_DIR%\Scripts\activate.bat"
     SET PYTHON_CMD=python
-    SET PIP_CMD=pip
+    SET PIP_CMD=python -m pip
 ) ELSE (
     echo   No se encontro venv, usando Python del sistema...
     SET PYTHON_CMD=python
-    SET PIP_CMD=pip
+    SET PIP_CMD=python -m pip
 )
 
 CD backend
@@ -36,6 +36,10 @@ REM Verificar PyInstaller
 IF ERRORLEVEL 1 (
     echo   PyInstaller no esta instalado. Instalando...
     %PIP_CMD% install pyinstaller
+    IF ERRORLEVEL 1 (
+        echo   ERROR: No se pudo instalar PyInstaller
+        EXIT /B 1
+    )
 )
 
 echo   Limpiando compilaciones anteriores...

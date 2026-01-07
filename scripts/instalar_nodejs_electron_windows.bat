@@ -60,6 +60,7 @@ IF ERRORLEVEL 1 (
     echo   Node.js encontrado:
     node --version
     npm --version
+    echo   Nota: Se recomienda Node.js 18 o superior para Electron 28.0.0
 )
 
 REM Paso 2: Verificar npm
