@@ -248,7 +248,34 @@ npm list electron-builder
 
 ## 🔧 Instalación del Proyecto
 
-### 🐧 Linux/macOS
+### 🚀 Instalación Automatizada (Recomendado)
+
+**Windows - Todo en uno:**
+```cmd
+scripts\preparar_todo_windows.bat
+```
+Este script instala y configura automáticamente:
+- ✅ Python y dependencias
+- ✅ Node.js (si no está instalado)
+- ✅ Electron y dependencias
+
+**Linux - Todo en uno:**
+```bash
+bash scripts/preparar_todo_linux.sh
+```
+Este script instala y configura automáticamente:
+- ✅ Python y dependencias
+- ✅ Node.js (si no está instalado, requiere sudo)
+- ✅ Electron y dependencias
+
+### 📦 Instalación por Componentes
+
+#### 🐧 Linux/macOS
+
+**Solo Node.js y Electron:**
+```bash
+bash scripts/instalar_nodejs_electron_linux.sh
+```
 
 **Iniciar la aplicación:**
 ```bash
@@ -260,9 +287,14 @@ npm list electron-builder
 ./empaquetar.sh
 ```
 
-### 🪟 Windows
+#### 🪟 Windows
 
-**Preparar entorno:**
+**Solo Node.js y Electron:**
+```cmd
+scripts\instalar_nodejs_electron_windows.bat
+```
+
+**Solo Python:**
 ```cmd
 scripts\preparar_entorno_windows.bat
 ```
