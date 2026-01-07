@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{% if talonario %}Editar{% else %}Nuevo{% endif %} Talonario - SISFAC{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">{% if talonario %}Editar{% else %}Nuevo{% endif %} Talonario</h2>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Nombre del Talonario *</label>
+                <input type="text" name="nombre" value="{{ talonario.nombre if talonario else '' }}" 
+                       required placeholder="Ej: Talonario 2024"
+                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Nombre descriptivo para identificar el talonario</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Prefijo *</label>
+                <input type="text" name="prefijo" value="{{ talonario.prefijo if talonario else 'FAC' }}" 
+                       required placeholder="FAC"
+                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Prefijo para los números de factura (ej: FAC, FACT, etc.)</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Número Inicio *</label>
+                    <input type="number" name="numero_inicio" value="{{ talonario.numero_inicio if talonario else 1 }}" 
+                           required min="1"
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Número Fin *</label>
+                    <input type="number" name="numero_fin" value="{{ talonario.numero_fin if talonario else 100 }}" 
+                           required min="1"
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800">
+                    <strong>Ejemplo:</strong> Si el prefijo es "FAC", inicio es 1 y fin es 100, 
+                    el talonario tendrá facturas desde FAC-0001 hasta FAC-0100
+                </p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Guardar
+                </button>
+                <a href="/talonarios" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

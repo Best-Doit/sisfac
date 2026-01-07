@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{% if producto %}Editar{% else %}Nuevo{% endif %} Producto - SISFAC{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">{% if producto %}Editar{% else %}Nuevo{% endif %} Producto</h2>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Código *</label>
+                <input type="text" name="codigo" value="{{ producto.codigo if producto else '' }}" 
+                       {% if producto %}readonly{% else %}required{% endif %}
+                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500 {% if producto %}bg-gray-100{% endif %}">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Nombre *</label>
+                <input type="text" name="nombre" value="{{ producto.nombre if producto else '' }}" 
+                       required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Descripción</label>
+                <textarea name="descripcion" rows="3" 
+                          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">{{ producto.descripcion if producto else '' }}</textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Precios (Bs.) *</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Precio 1 (Principal) *</label>
+                        <input type="number" step="0.01" min="0" name="precio_1" 
+                               value="{{ producto.precio_1 if producto and producto.precio_1 else (producto.precio_unitario if producto else '') }}" 
+                               required placeholder="0.00"
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <p class="text-xs text-gray-500 mt-1">Precio más alto (por defecto)</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Precio 2</label>
+                        <input type="number" step="0.01" min="0" name="precio_2" 
+                               value="{{ producto.precio_2 if producto else '' }}" 
+                               placeholder="0.00"
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <p class="text-xs text-gray-500 mt-1">Precio alternativo (opcional)</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">P1 debe ser mayor o igual que P2. Todos los precios aceptan decimales.</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Stock</label>
+                <input type="number" name="stock" value="{{ producto.stock if producto else 0 }}" 
+                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                    Guardar
+                </button>
+                <a href="/inventario" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

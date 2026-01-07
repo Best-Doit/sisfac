@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SISFAC{% endblock %}</title>
+    <script src="{{ url_for('static', filename='vendor/tailwind.min.js') }}"></script>
+    <script>
+        // Componente global de notificaciones (toasts)
+        function notificationCenter() {
+            return {
+                notifications: [],
+                init(initialMessages = []) {
+                    // Exponer función global para notificaciones manuales
+                    window.notify = (message, type = 'info') => {
+                        this.show(message, type);
+                    };
+                    // Cargar mensajes provenientes de Flask (flash)
+                    if (Array.isArray(initialMessages)) {
+                        initialMessages.forEach(([category, message]) => {
+                            const type = category === 'error' ? 'error' : (category === 'warning' ? 'warning' : 'success');
+                            this.show(message, type);
+                        });
+                    }
+                },
+                show(message, type = 'info') {
+                    const id = Date.now() + Math.random();
+                    const colores = {
+                        success: 'bg-green-600 text-white',
+                        error: 'bg-red-600 text-white',
+                        warning: 'bg-yellow-500 text-white',
+                        info: 'bg-blue-600 text-white'
+                    };
+                    this.notifications.push({
+                        id,
+                        message,
+                        type,
+                        classes: colores[type] || colores.info,
+                        visible: true
+                    });
+                    // Auto-cierre
+                    setTimeout(() => this.close(id), 4000);
+                },
+                close(id) {
+                    const notif = this.notifications.find(n => n.id === id);
+                    if (notif) {
+                        notif.visible = false;
+                        setTimeout(() => {
+                            this.notifications = this.notifications.filter(n => n.id !== id);
+                        }, 300);
+                    }
+                }
+            }
+        }
+
+        // Diálogo global de confirmación
+        function confirmDialog() {
+            return {
+                open: false,
+                message: '',
+                onConfirm: null,
+                init() {
+                    // Exponer función global para abrir el diálogo desde formularios/botones
+                    window.openConfirmModal = (message, onConfirm) => {
+                        this.message = message;
+                        this.onConfirm = onConfirm;
+                        this.open = true;
+                    };
+                    // Fallback para confirmaciones en línea
+                    window.confirmDelete = (form, message) => {
+                        if (window.openConfirmModal) {
+                            window.openConfirmModal(message, () => form.submit());
+                            return false;
+                        }
+                        return window.confirm(message);
+                    };
+                },
+                confirmar() {
+                    if (typeof this.onConfirm === 'function') {
+                        this.onConfirm();
+                    }
+                    this.cerrar();
+                },
+                cancelar() {
+                    this.cerrar();
+                },
+                cerrar() {
+                    this.open = false;
+                    this.message = '';
+                    this.onConfirm = null;
+                }
+            }
+        }
+
+        // Inicializar el estado del sidebar ANTES de que se renderice cualquier cosa
+        (function() {
+            if (!window.sidebarState) {
+                const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                window.sidebarState = { 
+                    collapsed: collapsed,
+                    initialized: true
+                };
+                
+                // Aplicar estilos CSS inmediatamente antes del renderizado
+                const style = document.createElement('style');
+                style.id = 'sidebar-init-styles';
+                style.textContent = `
+                    aside.sidebar-init {
+                        width: ${collapsed ? '4rem' : '16rem'} !important;
+                    }
+                    .main-content-init {
+                        margin-left: ${collapsed ? '4rem' : '16rem'} !important;
+                    }
+                    @media (max-width: 768px) {
+                        .main-content-init {
+                            margin-left: 0 !important;
+                        }
+                    }
+                `;
+                document.head.insertBefore(style, document.head.firstChild);
+            }
+        })();
+    </script>
+    <script defer src="{{ url_for('static', filename='vendor/alpine.min.js') }}"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Ocultar flechitas de input number */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        /* Desactivar transiciones en primer render para evitar saltos bruscos */
+        aside.sidebar-init {
+            transition: none !important;
+        }
+        .main-content-init {
+            transition: none !important;
+        }
+        /* Clases que sí tienen animación, sólo se activan tras interacción */
+        aside.sidebar-animated {
+            transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .main-content-animated {
+            transition: margin-left 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" 
+      x-data="{
+          sidebarOpen: false,
+          sidebarCollapsed: (function() {
+              // Leer el valor inmediatamente, sin depender de Alpine.js
+              return window.sidebarState ? window.sidebarState.collapsed : (localStorage.getItem('sidebarCollapsed') === 'true');
+          })(),
+          toggleSidebar() {
+              this.sidebarCollapsed = !this.sidebarCollapsed;
+              localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
+              if (window.sidebarState) {
+                  window.sidebarState.collapsed = this.sidebarCollapsed;
+              }
+              // Actualizar estilos CSS dinámicamente sin transición visible
+              requestAnimationFrame(() => {
+                  const styleEl = document.getElementById('sidebar-init-styles');
+                  if (styleEl) {
+                      styleEl.textContent = `
+                          aside.sidebar-init {
+                              width: ${this.sidebarCollapsed ? '4rem' : '16rem'} !important;
+                          }
+                          .main-content-init {
+                              margin-left: ${this.sidebarCollapsed ? '4rem' : '16rem'} !important;
+                          }
+                          @media (max-width: 768px) {
+                              .main-content-init {
+                                  margin-left: 0 !important;
+                              }
+                          }
+                      `;
+                  }
+                  // Activar transiciones sólo después de la primera interacción del usuario
+                  const sidebarEl = document.querySelector('aside.sidebar-init');
+                  const contentEl = document.querySelector('.main-content-init');
+                  if (sidebarEl && !sidebarEl.classList.contains('sidebar-animated')) {
+                      sidebarEl.classList.add('sidebar-animated');
+                  }
+                  if (contentEl && !contentEl.classList.contains('main-content-animated')) {
+                      contentEl.classList.add('main-content-animated');
+                  }
+              });
+          }
+      }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="bg-blue-600 text-white shadow-lg fixed h-full z-30 transform md:translate-x-0 sidebar-init"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+            <div class="flex flex-col h-full">
+                <!-- Logo/Header -->
+                <div class="p-4 border-b border-blue-700 flex items-center justify-between">
+                    <div x-show="!sidebarCollapsed">
+                        <h1 class="text-xl font-bold">SISFAC</h1>
+                        <p class="text-blue-200 text-xs mt-1">Sistema de Facturación</p>
+                    </div>
+                    <div x-show="sidebarCollapsed" class="text-center w-full">
+                        <h1 class="text-xl font-bold">S</h1>
+                    </div>
+                    <button @click="toggleSidebar()" 
+                            class="hidden md:block text-blue-200 hover:text-white p-1 rounded hover:bg-blue-700"
+                            title="Colapsar/Expandir">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  :d="sidebarCollapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
+                    <a href="/" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint == 'main.index' %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Dashboard' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Dashboard</span>
+                    </a>
+                    
+                    <a href="/clientes" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and 'clientes' in request.endpoint %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Clientes' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Clientes</span>
+                    </a>
+                    
+                    <a href="/inventario" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and 'inventario' in request.endpoint %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Inventario' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Inventario</span>
+                    </a>
+                    
+                    <a href="/facturar" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and ('facturar' in request.endpoint or request.endpoint == 'facturar_wrapper') %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Facturar' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Facturar</span>
+                    </a>
+                    
+                    <a href="/facturas" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and 'facturas' in request.endpoint and 'facturar' not in request.endpoint %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Historial Facturas' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Historial Facturas</span>
+                    </a>
+                    
+                    <a href="/talonarios" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and 'talonarios' in request.endpoint %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Talonarios' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Talonarios</span>
+                    </a>
+
+                    <a href="/ajustes" 
+                       class="flex items-center px-3 py-3 rounded-lg {% if request.endpoint and 'ajustes' in request.endpoint %}bg-blue-700 text-white{% else %}text-blue-100 hover:bg-blue-700 hover:text-white{% endif %}"
+                       :title="sidebarCollapsed ? 'Ajustes' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l.7 2.155a1 1 0 00.95.69h2.262c.969 0 1.371 1.24.588 1.81l-1.832 1.333a1 1 0 00-.364 1.118l.7 2.155c.3.921-.755 1.688-1.54 1.118l-1.832-1.333a1 1 0 00-1.175 0l-1.832 1.333c-.784.57-1.838-.197-1.539-1.118l.7-2.155a1 1 0 00-.364-1.118L4.45 7.582c-.783-.57-.38-1.81.588-1.81H7.3a1 1 0 00.95-.69l.799-2.155z"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed">Ajustes</span>
+                    </a>
+                </nav>
+                
+                <!-- Botón TikTok -->
+                <div class="p-2 border-t border-blue-700">
+                    <a href="https://www.tiktok.com/@best_doit" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="flex items-center justify-center px-3 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
+                       :title="sidebarCollapsed ? 'Sígueme en TikTok' : ''">
+                        <svg class="w-5 h-5 flex-shrink-0" :class="sidebarCollapsed ? '' : 'mr-2'" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                        </svg>
+                        <span x-show="!sidebarCollapsed" class="font-semibold text-sm">Sígueme en TikTok</span>
+                    </a>
+                </div>
+                
+                <!-- Footer del Sidebar -->
+                <div class="p-2 border-t border-blue-700">
+                    <p x-show="!sidebarCollapsed" class="text-blue-200 text-xs text-center">&copy; 2024 SISFAC</p>
+                    <p x-show="sidebarCollapsed" class="text-blue-200 text-xs text-center">©</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay para móvil -->
+        <div x-show="sidebarOpen" 
+             @click="sidebarOpen = false"
+             class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             style="display: none;"></div>
+
+        <!-- Contenido Principal -->
+        <div class="flex-1 flex flex-col overflow-hidden main-content main-content-init">
+            <!-- Barra superior móvil -->
+            <header class="bg-white shadow-sm md:hidden z-10 flex-shrink-0">
+                <div class="flex items-center justify-between p-4">
+                    <button @click="sidebarOpen = !sidebarOpen" 
+                            class="text-gray-600 hover:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-xl font-bold text-gray-800">SISFAC</h1>
+                    <div class="w-6"></div>
+                </div>
+            </header>
+
+            <!-- Contenido -->
+            <main class="flex-1 overflow-hidden p-4 md:p-8 max-w-full min-h-0">
+                {% block content %}{% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            <footer class="bg-gray-100 border-t border-gray-200 py-2 px-4 md:px-8 flex-shrink-0 mt-auto">
+                <div class="flex justify-between items-center text-xs text-gray-600">
+                    <div>
+                        <span class="font-semibold">SISFAC</span> - Sistema de Facturación
+                    </div>
+                    <div>
+                        &copy; 2024 - Todos los derechos reservados
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Contenedor global de notificaciones (toasts) -->
+    <div x-data="notificationCenter()" 
+         x-init='init({{ get_flashed_messages(with_categories=true)|tojson|safe }})'
+         class="fixed inset-0 flex flex-col items-end justify-start px-4 py-6 space-y-2 pointer-events-none z-50">
+        <template x-for="notif in notifications" :key="notif.id">
+            <div x-show="notif.visible"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-2"
+                 class="pointer-events-auto w-full max-w-sm rounded-lg shadow-lg px-4 py-3 flex items-start gap-3"
+                 :class="notif.classes">
+                <div class="flex-1 text-sm" x-text="notif.message"></div>
+                <button type="button"
+                        class="text-white/80 hover:text-white text-xs font-bold"
+                        @click="close(notif.id)">
+                    ✕
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <!-- Diálogo global de confirmación -->
+    <div x-data="confirmDialog()"
+         x-show="open"
+         x-cloak
+         class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Confirmar acción</h3>
+            <p class="text-sm text-gray-600 mb-6" x-text="message"></p>
+            <div class="flex justify-end gap-2">
+                <button type="button"
+                        class="px-4 py-2 rounded border border-gray-300 text-gray-700 text-sm hover:bg-gray-50"
+                        @click="cancelar()">
+                    Cancelar
+                </button>
+                <button type="button"
+                        class="px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+                        @click="confirmar()">
+                    Sí, continuar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navegación sin recarga completa (SPA ligera para sidebar) -->
+    <script>
+        (function() {
+            function setupSpaSidebarNavigation() {
+                const sidebar = document.querySelector('aside');
+                const main = document.querySelector('main');
+                if (!sidebar || !main) return;
+
+                async function loadPage(url, pushState = true) {
+                    try {
+                        const response = await fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        if (!response.ok) {
+                            window.location.href = url;
+                            return;
+                        }
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newMain = doc.querySelector('main');
+                        const newTitle = doc.querySelector('title');
+                        if (!newMain) {
+                            window.location.href = url;
+                            return;
+                        }
+
+                        // Reemplazar contenido principal sin animaciones
+                        main.innerHTML = newMain.innerHTML;
+
+                        // Actualizar título
+                        if (newTitle) {
+                            document.title = newTitle.textContent || document.title;
+                        }
+
+                        // Re-ejecutar scripts embebidos en el contenido
+                        const scripts = main.querySelectorAll('script');
+                        scripts.forEach((oldScript) => {
+                            const newScript = document.createElement('script');
+                            // Copiar atributos (src, type, etc.)
+                            for (const attr of oldScript.attributes) {
+                                newScript.setAttribute(attr.name, attr.value);
+                            }
+                            if (!newScript.src) {
+                                newScript.textContent = oldScript.textContent;
+                            }
+                            oldScript.replaceWith(newScript);
+                        });
+
+                        // Re-inicializar componentes Alpine en el nuevo contenido
+                        if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                            window.Alpine.initTree(main);
+                        }
+
+                        // Actualizar URL en la barra del navegador
+                        if (pushState && window.history && window.history.pushState) {
+                            window.history.pushState({}, '', url);
+                        }
+                    } catch (e) {
+                        // Si algo falla, degradar a navegación tradicional
+                        window.location.href = url;
+                    }
+                }
+
+                // Interceptar clics en enlaces del sidebar
+                sidebar.addEventListener('click', function(event) {
+                    const link = event.target.closest('a[href]');
+                    if (!link) return;
+
+                    const url = link.getAttribute('href');
+                    // Ignorar enlaces externos, anchors, o con modificadores de teclado
+                    if (!url || url.startsWith('http') || url.startsWith('#')) return;
+                    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    // Actualizar estado visual activo en el sidebar
+                    const links = sidebar.querySelectorAll('a[href]');
+                    links.forEach(a => {
+                        a.classList.remove('bg-blue-700', 'text-white');
+                    });
+                    link.classList.add('bg-blue-700', 'text-white');
+
+                    // Cargar la nueva página sin recargar todo el layout
+                    loadPage(url, true);
+                });
+
+                // Manejar navegación con botones atrás/adelante del navegador
+                window.addEventListener('popstate', function() {
+                    loadPage(window.location.pathname + window.location.search, false);
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupSpaSidebarNavigation);
+            } else {
+                setupSpaSidebarNavigation();
+            }
+        })();
+    </script>
+</body>
+</html>

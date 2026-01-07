@@ -1,0 +1,236 @@
+# ============================================
+# SISFAC - Sistema de Facturación
+# .gitignore - Archivos y directorios a ignorar
+# ============================================
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv
+env.bak/
+venv.bak/
+
+# ============================================
+# Flask
+# ============================================
+instance/
+.webassets-cache
+*.db-journal
+
+# ============================================
+# Base de datos
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+sisfac.db
+*.db.backup
+
+# ============================================
+# Backups
+# ============================================
+backups/
+*.backup
+*.bak
+
+# ============================================
+# Archivos temporales y uploads
+# ============================================
+backend/uploads/
+# Archivos Excel subidos por usuarios (ignorar)
+backend/uploads/*.xlsx
+backend/uploads/*.xls
+# NOTA: plantilla_importacion_productos.xlsx se MANTIENE en Git
+*.tmp
+*.temp
+*.cache
+
+# ============================================
+# PyInstaller / Empaquetado Python
+# ============================================
+*.spec.bak
+*.spec~
+*.manifest
+# NOTA: *.spec se mantiene (sisfac-backend.spec es parte del proyecto)
+build/
+dist/
+*.exe
+*.app
+
+# ============================================
+# Node.js / Electron
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+# NOTA: package-lock.json y package.json se MANTIENEN en Git
+
+# Electron build outputs
+electron/dist/
+electron/build/
+electron/node_modules/
+*.AppImage
+*.dmg
+*.exe
+*.deb
+*.rpm
+*.pkg
+*.snap
+
+# ============================================
+# IDEs y Editores
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# Sistemas Operativos
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ============================================
+# Archivos de configuración local
+# ============================================
+.env
+.env.local
+.env.*.local
+config.local.py
+settings.local.py
+
+# ============================================
+# Archivos de prueba y desarrollo
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# ============================================
+# Archivos de documentación generados
+# ============================================
+docs/_build/
+site/
+
+# ============================================
+# Archivos de Tailwind CSS (si se generan)
+# ============================================
+*.css.map
+tailwind.output.css
+
+# ============================================
+# Scripts de ejecución local (mantener en Git)
+# ============================================
+# start.sh - MANTENER (script de inicio del proyecto)
+# ejecutar_appimage.sh - MANTENER (script para ejecutar AppImage)
+# empaquetar.sh - MANTENER (script de empaquetado)
+
+# ============================================
+# Archivos de plantilla Excel (si contienen datos sensibles)
+# ============================================
+# Descomentar si las plantillas contienen datos de ejemplo sensibles
+# plantilla_importacion_productos.xlsx
+
+# ============================================
+# Archivos de configuración de Electron
+# ============================================
+# Mantener package.json pero ignorar node_modules
+# electron/package.json (mantener)
+# electron/package-lock.json (mantener)
+
+# ============================================
+# Archivos de desktop (mantener en Git)
+# ============================================
+# *.desktop - MANTENER (archivos de lanzador son parte del proyecto)
+# electron/SISFAC.desktop - MANTENER
+

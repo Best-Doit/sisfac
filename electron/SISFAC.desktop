@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SISFAC
+Comment=Sistema de Facturación con Inventario y Clientes
+Exec=env ELECTRON_DISABLE_SANDBOX=1 %k --no-sandbox --disable-setuid-sandbox
+Icon=sisfac-desktop
+Terminal=false
+Categories=Office;Finance;
+MimeType=
+StartupNotify=true
+

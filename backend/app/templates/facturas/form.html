@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Factura - SISFAC{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Registrar Factura Física</h2>
+    
+    <form method="POST" x-data="facturaForm({
+        numeroFactura: '{{ numero_factura_sugerido or '' }}',
+        talonarioId: '{{ talonario_seleccionado_id or '' }}',
+        clienteId: '{{ cliente_seleccionado_id or '' }}'
+    })">
+        <!-- Paso 1: Información de la Factura -->
+        <div x-show="paso === 1" class="space-y-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">Información de la Factura</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Número de Factura *</label>
+                        <input type="text" name="numero_factura" x-model="numeroFactura"
+                               placeholder="Ej: FAC-0001" 
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Talonario</label>
+                        <select name="talonario_id" x-model="talonarioId"
+                                class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">Sin talonario</option>
+                            {% for talonario in talonarios %}
+                            <option value="{{ talonario.id }}" {% if talonario_seleccionado_id == talonario.id %}selected{% endif %}>
+                                {{ talonario.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cliente *</label>
+                        <select name="cliente_id" required x-model="clienteId"
+                                class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">Seleccionar cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if cliente_seleccionado_id == cliente.id %}selected{% endif %}>
+                                {{ cliente.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Fecha Emisión *</label>
+                        <input type="date" name="fecha_emision" required x-model="fechaEmision"
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Fecha Vencimiento</label>
+                        <input type="date" name="fecha_vencimiento" x-model="fechaVencimiento"
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">IVA (%)</label>
+                        <input type="number" step="0.01" name="iva" value="0" x-model="iva"
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="actualizar_stock" x-model="actualizarStock" class="mr-2">
+                        <span class="text-sm text-gray-700">Actualizar stock al guardar</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Notas</label>
+                    <textarea name="notas" rows="2" x-model="notas"
+                              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="button" @click="paso = 2" 
+                        class="bg-purple-600 text-white px-8 py-3 rounded hover:bg-purple-700 font-semibold">
+                    Siguiente: Seleccionar Productos →
+                </button>
+            </div>
+        </div>
+
+        <!-- Paso 2: Selección de Productos (Carrito) -->
+        <div x-show="paso === 2" class="space-y-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Seleccionar Productos (Ordenados por Stock)</h3>
+                    <button type="button" @click="paso = 1" 
+                            class="text-gray-600 hover:text-gray-800">← Volver</button>
+                </div>
+                
+                <!-- Búsqueda -->
+                <div class="mb-4 relative">
+                    <input type="text" x-model="busqueda" 
+                           @input="buscarPredictivoProductos($event.target.value)"
+                           @focus="buscarPredictivoProductos(busqueda)"
+                           @blur="setTimeout(() => mostrarSugerenciasProductos = false, 200)"
+                           placeholder="Buscar producto..."
+                           class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <!-- Dropdown de sugerencias -->
+                    <div x-show="mostrarSugerenciasProductos" 
+                         x-transition
+                         class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <template x-for="sugerencia in sugerenciasProductos" :key="sugerencia.id">
+                            <div @click="seleccionarSugerenciaProducto(sugerencia)"
+                                 class="px-4 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                                <div class="font-semibold text-gray-900" x-text="sugerencia.nombre"></div>
+                                <div class="text-sm text-gray-500" x-text="'Código: ' + (sugerencia.codigo || 'N/A') + ' | Stock: ' + sugerencia.stock"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- Lista de Productos -->
+                <div class="max-h-96 overflow-y-auto border rounded">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio Principal</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for producto in productos %}
+                            <tr x-show="filtrarProducto('{{ producto.nombre }}', '{{ producto.codigo }}')" 
+                                class="hover:bg-gray-50 {% if producto.stock < 10 %}bg-red-50{% endif %}">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ producto.codigo }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ producto.nombre }}</td>
+                                <td class="px-4 py-3 text-sm {% if producto.stock < 10 %}text-red-600 font-bold{% else %}text-gray-500{% endif %}">
+                                    {{ producto.stock }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">Bs. {{ "%.2f"|format(producto.precio_unitario) }}</td>
+                                <td class="px-4 py-3">
+                                    <button type="button" 
+                                            @click="agregarAlCarrito({{ producto.id }}, '{{ producto.codigo }}', '{{ producto.nombre }}', {{ producto.precio_unitario }}, {{ producto.precio_1 or producto.precio_unitario }}, {{ producto.precio_2 or producto.precio_unitario }}, {{ producto.precio_3 or producto.precio_unitario }}, {{ producto.stock }})"
+                                            class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 text-sm">
+                                        ➕ Agregar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Carrito -->
+            <div class="bg-white rounded-lg shadow p-6" x-show="carrito.length > 0">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">Productos Seleccionados (<span x-text="carrito.length"></span>)</h3>
+                <div class="space-y-2">
+                    <template x-for="(item, index) in carrito" :key="index">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div class="flex-1">
+                                <span class="font-semibold" x-text="item.codigo + ' - ' + item.nombre"></span>
+                                <span class="text-sm text-gray-500 ml-2">Stock: <span x-text="item.stock"></span></span>
+                            </div>
+                            <button type="button" @click="eliminarDelCarrito(index)"
+                                    class="text-red-600 hover:text-red-800 ml-4">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <div class="flex justify-between">
+                <button type="button" @click="paso = 1" 
+                        class="bg-gray-400 text-white px-8 py-3 rounded hover:bg-gray-500 font-semibold">
+                    ← Volver
+                </button>
+                <button type="button" @click="irATablaFactura()" 
+                        :disabled="carrito.length === 0"
+                        :class="carrito.length === 0 ? 'bg-gray-300' : 'bg-purple-600 hover:bg-purple-700'"
+                        class="text-white px-8 py-3 rounded font-semibold">
+                    Continuar a Tabla de Factura →
+                </button>
+            </div>
+        </div>
+
+        <!-- Paso 3: Tabla Tipo Factura Manual -->
+        <div x-show="paso === 3" class="space-y-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Tabla de Factura</h3>
+                    <button type="button" @click="paso = 2" 
+                            class="text-gray-600 hover:text-gray-800">← Volver a Selección</button>
+                </div>
+                
+                <!-- Campos ocultos para producto_id -->
+                <template x-for="(item, index) in tablaFactura" :key="index">
+                    <input type="hidden" :name="`producto_id[]`" :value="item.producto_id">
+                </template>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-300">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Código</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Descripción</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Cantidad</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Principal</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">P1</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">P2</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">P3</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Precio Unit.</th>
+                                <th class="border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(item, index) in tablaFactura" :key="index">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border border-gray-300 px-3 py-2 text-sm" x-text="item.codigo"></td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm" x-text="item.nombre"></td>
+                                    <td class="border border-gray-300 px-3 py-2">
+                                        <input type="number" step="0.01" min="0.01" 
+                                               :name="`cantidad[]`"
+                                               x-model="item.cantidad"
+                                               @input="calcularFila(index)"
+                                               class="w-full px-2 py-1 border rounded text-sm">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        <input type="radio" :name="`precio_nivel_${index}`" 
+                                               value="principal" 
+                                               x-model="item.precioSeleccionado"
+                                               @change="actualizarPrecio(index)"
+                                               class="cursor-pointer">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        <input type="radio" :name="`precio_nivel_${index}`" 
+                                               value="1" 
+                                               x-model="item.precioSeleccionado"
+                                               @change="actualizarPrecio(index)"
+                                               class="cursor-pointer">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        <input type="radio" :name="`precio_nivel_${index}`" 
+                                               value="2" 
+                                               x-model="item.precioSeleccionado"
+                                               @change="actualizarPrecio(index)"
+                                               class="cursor-pointer">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        <input type="radio" :name="`precio_nivel_${index}`" 
+                                               value="3" 
+                                               x-model="item.precioSeleccionado"
+                                               @change="actualizarPrecio(index)"
+                                               class="cursor-pointer">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2">
+                                        <input type="number" step="0.01" min="0" 
+                                               :name="`precio_unitario[]`"
+                                               x-model="item.precio"
+                                               @input="calcularFila(index)"
+                                               class="w-full px-2 py-1 border rounded text-sm">
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm font-semibold" 
+                                        x-text="`Bs. ${item.subtotal.toFixed(2)}`"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                        <tfoot class="bg-gray-100">
+                            <tr>
+                                <td colspan="8" class="border border-gray-300 px-3 py-2 text-right font-bold">Subtotal:</td>
+                                <td class="border border-gray-300 px-3 py-2 font-bold" 
+                                    x-text="`Bs. ${subtotal.toFixed(2)}`"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="8" class="border border-gray-300 px-3 py-2 text-right font-bold">IVA:</td>
+                                <td class="border border-gray-300 px-3 py-2 font-bold" 
+                                    x-text="`Bs. ${ivaMonto.toFixed(2)}`"></td>
+                            </tr>
+                            <tr class="bg-purple-100">
+                                <td colspan="8" class="border border-gray-300 px-3 py-2 text-right font-bold text-lg">TOTAL:</td>
+                                <td class="border border-gray-300 px-3 py-2 font-bold text-lg text-purple-600" 
+                                    x-text="`Bs. ${total.toFixed(2)}`"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            
+            <div class="flex justify-between">
+                <button type="button" @click="paso = 2" 
+                        class="bg-gray-400 text-white px-8 py-3 rounded hover:bg-gray-500 font-semibold">
+                    ← Volver
+                </button>
+                <button type="submit" 
+                        class="bg-green-600 text-white px-8 py-3 rounded hover:bg-green-700 font-semibold">
+                    💾 Guardar Factura
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function facturaForm(initial = {}) {
+    return {
+        paso: 1,
+        numeroFactura: initial.numeroFactura || '',
+        talonarioId: initial.talonarioId || '',
+        clienteId: initial.clienteId || '',
+        fechaEmision: '',
+        fechaVencimiento: '',
+        iva: 0,
+        actualizarStock: false,
+        notas: '',
+        busqueda: '',
+        carrito: [],
+        tablaFactura: [],
+        sugerenciasProductos: [],
+        mostrarSugerenciasProductos: false,
+        
+        async buscarPredictivoProductos(termino) {
+            if (termino.length < 2) {
+                this.sugerenciasProductos = [];
+                this.mostrarSugerenciasProductos = false;
+                return;
+            }
+            try {
+                const response = await fetch(`/inventario/api/buscar?q=${encodeURIComponent(termino)}`);
+                const data = await response.json();
+                this.sugerenciasProductos = data.slice(0, 5);
+                this.mostrarSugerenciasProductos = this.sugerenciasProductos.length > 0;
+            } catch (error) {
+                this.sugerenciasProductos = [];
+                this.mostrarSugerenciasProductos = false;
+            }
+        },
+        
+        seleccionarSugerenciaProducto(sugerencia) {
+            this.busqueda = sugerencia.nombre;
+            this.mostrarSugerenciasProductos = false;
+        },
+        
+        filtrarProducto(nombre, codigo) {
+            if (!this.busqueda) return true;
+            const busq = this.busqueda.toLowerCase();
+            return nombre.toLowerCase().includes(busq) || codigo.toLowerCase().includes(busq);
+        },
+        
+        agregarAlCarrito(productoId, codigo, nombre, precioPrincipal, precio1, precio2, precio3, stock) {
+            // Verificar si ya está en el carrito
+            const existe = this.carrito.find(item => item.producto_id === productoId);
+            if (existe) {
+                if (window.notify) {
+                    window.notify('Este producto ya está en el carrito', 'warning');
+                } else {
+                    alert('Este producto ya está en el carrito');
+                }
+                return;
+            }
+            
+            this.carrito.push({
+                producto_id: productoId,
+                codigo: codigo,
+                nombre: nombre,
+                precio_principal: precioPrincipal,
+                precio_1: precio1,
+                precio_2: precio2,
+                precio_3: precio3,
+                stock: stock,
+                cantidad: 1,
+                precioSeleccionado: 'principal',
+                precio: precioPrincipal,
+                subtotal: precioPrincipal
+            });
+        },
+        
+        eliminarDelCarrito(index) {
+            this.carrito.splice(index, 1);
+        },
+        
+        irATablaFactura() {
+            if (this.carrito.length === 0) {
+                if (window.notify) {
+                    window.notify('Debes agregar al menos un producto', 'warning');
+                } else {
+                    alert('Debes agregar al menos un producto');
+                }
+                return;
+            }
+            // Copiar carrito a tabla de factura
+            this.tablaFactura = this.carrito.map(item => ({
+                producto_id: item.producto_id,
+                codigo: item.codigo,
+                nombre: item.nombre,
+                precio_principal: item.precio_principal,
+                precio_1: item.precio_1,
+                precio_2: item.precio_2,
+                precio_3: item.precio_3,
+                stock: item.stock,
+                cantidad: 1,
+                precioSeleccionado: 'principal',
+                precio: item.precio_principal,
+                subtotal: item.precio_principal
+            }));
+            this.paso = 3;
+        },
+        
+        actualizarPrecio(index) {
+            const item = this.tablaFactura[index];
+            if (item.precioSeleccionado === 'principal' || !item.precioSeleccionado) {
+                item.precio = item.precio_principal;
+            } else if (item.precioSeleccionado === '1') {
+                item.precio = item.precio_1;
+            } else if (item.precioSeleccionado === '2') {
+                item.precio = item.precio_2;
+            } else if (item.precioSeleccionado === '3') {
+                item.precio = item.precio_3;
+            }
+            this.calcularFila(index);
+        },
+        
+        calcularFila(index) {
+            const item = this.tablaFactura[index];
+            item.subtotal = (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio) || 0);
+        },
+        
+        get subtotal() {
+            return this.tablaFactura.reduce((sum, item) => sum + (parseFloat(item.subtotal) || 0), 0);
+        },
+        
+        get ivaMonto() {
+            return this.subtotal * (parseFloat(this.iva) || 0) / 100;
+        },
+        
+        get total() {
+            return this.subtotal + this.ivaMonto;
+        },
+        
+    }
+}
+</script>
+{% endblock %}

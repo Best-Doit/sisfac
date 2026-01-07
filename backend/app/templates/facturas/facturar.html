@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+
+{% block title %}Facturar - SISFAC{% endblock %}
+
+{% block content %}
+<div class="w-full h-full flex flex-col" style="height: calc(100vh - 100px);">
+    <h2 class="text-3xl font-bold text-gray-800 mb-3 flex-shrink-0">Facturar</h2>
+    
+    <form method="POST" class="flex flex-col flex-1 min-h-0 overflow-hidden" x-data="facturarForm({
+        numeroFactura: '{{ numero_factura_sugerido or '' }}',
+        talonarioId: '{{ talonario_seleccionado_id or '' }}',
+        clienteId: '{{ cliente_seleccionado_id or '' }}'
+    })">
+        <!-- Paso 1: Selección de Productos -->
+        <div x-show="paso === 1" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="space-y-4">
+            
+            <!-- Búsqueda y Botón Continuar -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <input type="text" x-model="busqueda" 
+                               placeholder="Buscar producto por código o nombre..."
+                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="button" @click="irATablaFactura()" 
+                            :disabled="carrito.length === 0"
+                            :class="carrito.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                            class="text-white px-6 py-2 rounded font-semibold whitespace-nowrap">
+                        Continuar a Tabla de Factura
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Layout de dos columnas -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Tabla izquierda: Lista de Productos (más ancha - 2/3) -->
+                <div class="lg:col-span-2">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Lista de Productos (Ordenados por Stock)</h3>
+                    
+                    <!-- Lista de Productos -->
+                    <div class="overflow-y-auto border border-gray-200 rounded-lg" style="max-height: calc(100vh - 300px);">
+                        <table class="min-w-full divide-y divide-gray-200 bg-white">
+                            <thead class="bg-gradient-to-r from-blue-500 to-indigo-600 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase">Código</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase">Nombre</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase">Stock</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase">Precio Principal</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for producto in productos %}
+                                <tr x-show="filtrarProducto('{{ producto.nombre }}', '{{ producto.codigo }}')" 
+                                    class="{% if loop.index % 2 == 0 %}bg-blue-50/30{% else %}bg-white{% endif %} hover:bg-blue-100/50 {% if producto.stock < 10 %}bg-red-50{% endif %} {% if producto.stock <= 0 %}opacity-60{% endif %}">
+                                    <td class="px-3 py-2 text-sm font-medium text-gray-900">{{ producto.codigo }}</td>
+                                    <td class="px-3 py-2 text-sm text-gray-900">{{ producto.nombre }}</td>
+                                    <td class="px-3 py-2 text-sm {% if producto.stock < 10 %}text-red-600 font-bold{% else %}text-gray-500{% endif %}">
+                                        {{ producto.stock }}
+                                    </td>
+                                    <td class="px-3 py-2 text-sm text-gray-500">
+                                        Bs. {{ "%.2f"|format(producto.precio_1 or producto.precio_unitario) }}
+                                        {% if producto.precio_2 %}
+                                        <span class="text-xs text-gray-400">/ P2: {{ "%.2f"|format(producto.precio_2) }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        {% if producto.stock <= 0 %}
+                                        <button type="button" 
+                                                disabled
+                                                class="bg-gray-300 text-gray-500 px-3 py-1 rounded cursor-not-allowed text-xs whitespace-nowrap"
+                                                title="Stock agotado">
+                                            ❌ Sin Stock
+                                        </button>
+                                        {% else %}
+                                        <button type="button" 
+                                                @click="agregarAlCarrito({{ producto.id }}, '{{ producto.codigo }}', '{{ producto.nombre }}', {{ producto.precio_1 or producto.precio_unitario }}, {{ producto.precio_1 or producto.precio_unitario }}, {{ producto.precio_2 if producto.precio_2 else 'null' }}, {{ producto.stock }})"
+                                                class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs whitespace-nowrap">
+                                            ➕ Agregar
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Tabla derecha: Productos Seleccionados (más estrecha - 1/3) -->
+                <div class="lg:col-span-1 bg-white rounded-lg shadow p-4">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Seleccionados (<span x-text="carrito.length"></span>)</h3>
+                    
+                    <div class="overflow-y-auto border rounded" style="max-height: calc(100vh - 300px);">
+                        <table class="min-w-full divide-y divide-gray-200" x-show="carrito.length > 0">
+                            <thead class="bg-gradient-to-r from-blue-500 to-indigo-600 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-white uppercase">Producto</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-white uppercase">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="(item, index) in carrito" :key="index">
+                                    <tr :class="index % 2 === 0 ? 'bg-blue-50/30' : 'bg-white'" class="hover:bg-blue-100/50">
+                                        <td class="px-2 py-2">
+                                            <div class="text-xs font-semibold text-gray-900" x-text="item.codigo"></div>
+                                            <div class="text-xs text-gray-600 truncate" x-text="item.nombre"></div>
+                                            <div class="text-xs text-gray-500">
+                                                Cantidad: <span class="font-bold text-blue-600" x-text="item.cantidad"></span>
+                                            </div>
+                                            <div class="text-xs text-gray-500">Stock: <span x-text="item.stock"></span></div>
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <button type="button" @click="eliminarDelCarrito(index)"
+                                                    class="text-red-600 hover:text-red-800 text-xs">
+                                                🗑️
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <div x-show="carrito.length === 0" class="p-8 text-center text-gray-400 text-sm">
+                            No hay productos seleccionados
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 2: Tabla de Factura e Información -->
+        <div x-show="paso === 2"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <!-- Información de la Factura -->
+            <div class="bg-white rounded-lg shadow p-2 md:p-3 flex-shrink-0 mb-2">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-gray-800">Información de la Factura</h3>
+                    <button type="button" @click="paso = 1" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold text-sm">Volver a Selección</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold mb-1">Número de Factura *</label>
+                        <input type="text" name="numero_factura" x-model="numeroFactura"
+                               placeholder="Ej: FAC-0001" 
+                               class="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold mb-1">Talonario</label>
+                        <select name="talonario_id" x-model="talonarioId"
+                                @change="actualizarNumeroFactura()"
+                                class="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Sin talonario</option>
+                            {% for talonario in talonarios %}
+                            <option value="{{ talonario.id }}" {% if talonario_seleccionado_id == talonario.id %}selected{% endif %}>
+                                {{ talonario.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold mb-1">Cliente *</label>
+                        <select name="cliente_id" required x-model="clienteId"
+                                class="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if cliente_seleccionado_id == cliente.id %}selected{% endif %}>
+                                {{ cliente.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold mb-1">Fecha Emisión *</label>
+                        <input type="date" name="fecha_emision" required x-model="fechaEmision"
+                               class="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Factura -->
+            <div class="bg-white rounded-lg shadow p-2 md:p-3 flex flex-col flex-1 min-h-0">
+                <h3 class="text-lg font-bold mb-2 text-gray-800 flex-shrink-0">Tabla de Factura</h3>
+                
+                <!-- Campos ocultos para producto_id -->
+                <template x-for="(item, index) in tablaFactura" :key="index">
+                    <input type="hidden" :name="`producto_id[]`" :value="item.producto_id">
+                </template>
+                
+                <div class="w-full flex-1 overflow-auto min-h-0" style="position: relative;">
+                    <table class="w-full border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white text-sm">
+                        <thead class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+                            <tr>
+                                <th class="px-2 py-2 font-semibold text-left w-[10%]">Código</th>
+                                <th class="px-2 py-2 font-semibold text-left w-[35%]">Descripción</th>
+                                <th class="px-2 py-2 font-semibold text-center w-[12%]">Cant.</th>
+                                <th class="px-2 py-2 font-semibold text-center w-[15%]">Precio</th>
+                                <th class="px-2 py-2 font-semibold text-right w-[18%]">Subtotal</th>
+                                <th class="px-2 py-2 font-semibold text-center w-[10%]">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="(item, index) in tablaFactura" :key="index">
+                                <tr :class="index % 2 === 0 ? 'bg-blue-50/40' : 'bg-white'" class="hover:bg-blue-100/60">
+                                    <td class="px-2 py-2 text-sm font-medium text-gray-800 whitespace-nowrap" x-text="item.codigo"></td>
+                                    <td class="px-2 py-2 text-sm text-gray-700">
+                                        <div class="truncate" x-text="item.nombre" :title="item.nombre"></div>
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" 
+                                                    @click="decrementarCantidad(index)"
+                                                    class="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-l border border-gray-300 font-bold text-lg">
+                                                −
+                                            </button>
+                                            <input type="number" step="1" min="1" 
+                                                   :max="item.stock"
+                                                   :name="`cantidad[]`"
+                                                   x-model="item.cantidad"
+                                                   @input="validarCantidad(index)"
+                                                   class="w-16 text-center px-2 py-1.5 border-y border-gray-300 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                                                   style="-moz-appearance: textfield;">
+                                            <button type="button" 
+                                                    @click="incrementarCantidad(index)"
+                                                    class="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-r border border-gray-300 font-bold text-lg">
+                                                +
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="px-2 py-2">
+                                        <div class="flex items-center gap-2">
+                                            <div class="relative" x-data="{ 
+                                                open: false,
+                                                dropdownStyle: '',
+                                                positionDropdown(buttonEl) {
+                                                    if (!this.open) return;
+                                                    const rect = buttonEl.getBoundingClientRect();
+                                                    const dropdownHeight = 120;
+                                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                                    const spaceAbove = rect.top;
+                                                    
+                                                    let top = rect.bottom + 4;
+                                                    let left = rect.left;
+                                                    
+                                                    if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                                                        top = rect.top - dropdownHeight - 4;
+                                                    }
+                                                    
+                                                    this.dropdownStyle = `position: fixed; top: ${top}px; left: ${left}px; z-index: 99999;`;
+                                                }
+                                            }" 
+                                            x-ref="dropdownContainer"
+                                            @click.outside="open = false">
+                                                <button type="button" 
+                                                        x-ref="priceButton"
+                                                        @click="open = !open; $nextTick(() => positionDropdown($refs.priceButton))"
+                                                        class="px-2.5 py-1.5 bg-blue-600 text-white rounded text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
+                                                    <span x-text="item.precioSeleccionado === 'principal' ? 'Principal' : 'P' + item.precioSeleccionado"></span>
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                    </svg>
+                                                </button>
+                                                <div x-show="open" 
+                                                     x-transition
+                                                     x-cloak
+                                                     :style="dropdownStyle"
+                                                     class="w-40 bg-white border border-gray-300 rounded-lg shadow-xl">
+                                                    <button type="button"
+                                                            @click="seleccionarPrecio(index, '1'); open = false"
+                                                            class="w-full px-2 py-1.5 text-sm text-left hover:bg-blue-50 border-b border-gray-100">
+                                                        P1 - Bs. <span x-text="item.precio_1.toFixed(2)"></span>
+                                                    </button>
+                                                    <button type="button"
+                                                            @click="seleccionarPrecio(index, '2'); open = false"
+                                                            class="w-full px-2 py-1.5 text-sm text-left hover:bg-blue-50 border-b border-gray-100">
+                                                        P2 - Bs. <span x-text="item.precio_2.toFixed(2)"></span>
+                                                    </button>
+                                                    <button type="button"
+                                                            @click="seleccionarPrecio(index, 'principal'); open = false"
+                                                            class="w-full px-2 py-1.5 text-sm text-left hover:bg-blue-50">
+                                                        Principal - Bs. <span x-text="item.precio_principal.toFixed(2)"></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-gray-800" x-text="`Bs. ${item.precio.toFixed(2)}`"></span>
+                                        </div>
+                                        <input type="hidden" :name="`precio_unitario[]`" :value="item.precio">
+                                    </td>
+                                    <td class="px-2 py-2 text-sm font-semibold text-right text-gray-800" 
+                                        x-text="`Bs. ${item.subtotal.toFixed(2)}`"></td>
+                                    <td class="px-2 py-2 text-sm text-center text-gray-600" 
+                                        x-text="item.stock"
+                                        :class="item.stock < 10 ? 'text-red-600 font-bold' : ''"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr class="bg-blue-600/10">
+                                <td colspan="5" class="px-2 py-2 text-right font-bold text-base text-gray-800">TOTAL:</td>
+                                <td class="px-2 py-2 font-bold text-base text-right text-blue-700" 
+                                    x-text="`Bs. ${total.toFixed(2)}`"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="flex justify-between flex-shrink-0 mt-2">
+                <button type="button" @click="paso = 1" 
+                        class="bg-blue-600 text-white px-8 py-3 rounded hover:bg-blue-700 font-semibold">
+                    Volver
+                </button>
+                <button type="submit" 
+                        class="bg-green-600 text-white px-8 py-3 rounded hover:bg-green-700 font-semibold">
+                    Guardar Factura
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function facturarForm(initial = {}) {
+    return {
+        paso: 1,
+        numeroFactura: initial.numeroFactura || '',
+        talonarioId: initial.talonarioId || '',
+        clienteId: initial.clienteId || '',
+        fechaEmision: new Date().toISOString().split('T')[0],
+        busqueda: '',
+        carrito: [],
+        tablaFactura: [],
+        talonariosData: {{ talonarios_data|tojson|safe }},
+        
+        actualizarNumeroFactura() {
+            if (!this.talonarioId) {
+                this.numeroFactura = '';
+                return;
+            }
+            const talonario = this.talonariosData.find(t => t.id == this.talonarioId);
+            if (talonario && talonario.numero_sugerido) {
+                this.numeroFactura = talonario.numero_sugerido;
+            } else {
+                this.numeroFactura = '';
+            }
+        },
+        
+        filtrarProducto(nombre, codigo) {
+            if (!this.busqueda) return true;
+            const busq = this.busqueda.toLowerCase();
+            return nombre.toLowerCase().includes(busq) || codigo.toLowerCase().includes(busq);
+        },
+        
+        agregarAlCarrito(productoId, codigo, nombre, precioPrincipal, precio1, precio2, stock) {
+            // Verificar si el stock es 0 o menor
+            if (stock <= 0) {
+                if (window.notify) {
+                    window.notify('No se puede agregar: el producto no tiene stock disponible', 'error');
+                } else {
+                    alert('No se puede agregar: el producto no tiene stock disponible');
+                }
+                return;
+            }
+            
+            // Verificar si ya está en el carrito
+            const existe = this.carrito.find(item => item.producto_id === productoId);
+            if (existe) {
+                // Si ya existe, incrementar la cantidad solo si hay stock disponible
+                if (existe.cantidad >= existe.stock) {
+                    if (window.notify) {
+                        window.notify('No hay suficiente stock disponible', 'warning');
+                    } else {
+                        alert('No hay suficiente stock disponible');
+                    }
+                    return;
+                }
+                existe.cantidad += 1;
+                existe.subtotal = existe.cantidad * existe.precio;
+                return;
+            }
+            
+            // Si no existe, agregarlo al carrito
+            // Por defecto usar precio_1 (el más alto)
+            const precio1Val = parseFloat(precio1) || parseFloat(precioPrincipal) || 0;
+            const precio2Val = (precio2 !== null && precio2 !== undefined && precio2 !== '' && precio2 !== 'null') ? parseFloat(precio2) : null;
+            const precioInicial = precio1Val;
+            
+            this.carrito.push({
+                producto_id: productoId,
+                codigo: codigo,
+                nombre: nombre,
+                precio_principal: precio1Val,
+                precio_1: precio1Val,
+                precio_2: precio2Val,
+                stock: parseInt(stock) || 0,
+                cantidad: 1,
+                precioSeleccionado: '1',
+                precio: precioInicial,
+                subtotal: precioInicial
+            });
+        },
+        
+        eliminarDelCarrito(index) {
+            this.carrito.splice(index, 1);
+        },
+        
+        irATablaFactura() {
+            if (this.carrito.length === 0) {
+                if (window.notify) {
+                    window.notify('Debes agregar al menos un producto', 'warning');
+                } else {
+                    alert('Debes agregar al menos un producto');
+                }
+                return;
+            }
+            // Copiar carrito a tabla de factura
+            // Por defecto usar precio_1 (el más alto)
+            this.tablaFactura = this.carrito.map(item => {
+                const precioInicial = item.precio_1 || item.precio_principal;
+                return {
+                    producto_id: item.producto_id,
+                    codigo: item.codigo,
+                    nombre: item.nombre,
+                    precio_principal: item.precio_principal,
+                    precio_1: item.precio_1,
+                    precio_2: item.precio_2,
+                    stock: item.stock,
+                    cantidad: 1,
+                    precioSeleccionado: '1',
+                    precio: precioInicial,
+                    subtotal: precioInicial
+                };
+            });
+            this.paso = 2;
+            // Usar $nextTick para actualizar después del renderizado
+            this.$nextTick(() => {
+                this.tablaFactura.forEach((item, index) => {
+                    const selects = document.querySelectorAll('select[x-model*="precioSeleccionado"]');
+                    if (selects[index]) {
+                        this.actualizarTextoOpciones(selects[index], item);
+                    }
+                });
+            });
+        },
+        
+        seleccionarPrecio(index, tipo) {
+            const item = this.tablaFactura[index];
+            item.precioSeleccionado = tipo;
+            if (tipo === 'principal') {
+                item.precio = item.precio_principal;
+            } else if (tipo === '1') {
+                item.precio = item.precio_1;
+            } else if (tipo === '2') {
+                item.precio = item.precio_2;
+            }
+            this.calcularFila(index);
+        },
+        
+        incrementarCantidad(index) {
+            const item = this.tablaFactura[index];
+            if (item.cantidad < item.stock) {
+                item.cantidad += 1;
+                this.calcularFila(index);
+            } else {
+                if (window.notify) {
+                    window.notify(`No hay suficiente stock disponible (${item.stock})`, 'warning');
+                } else {
+                    alert(`No hay suficiente stock disponible (${item.stock})`);
+                }
+            }
+        },
+        
+        decrementarCantidad(index) {
+            const item = this.tablaFactura[index];
+            if (item.cantidad > 1) {
+                item.cantidad -= 1;
+                this.calcularFila(index);
+            }
+        },
+        
+        validarCantidad(index) {
+            const item = this.tablaFactura[index];
+            const cantidad = parseFloat(item.cantidad) || 0;
+            
+            // Validar que la cantidad no exceda el stock
+            if (cantidad > item.stock) {
+                if (window.notify) {
+                    window.notify(`La cantidad no puede exceder el stock disponible (${item.stock})`, 'warning');
+                } else {
+                    alert(`La cantidad no puede exceder el stock disponible (${item.stock})`);
+                }
+                item.cantidad = item.stock;
+            }
+            
+            // Validar que la cantidad sea al menos 1
+            if (cantidad < 1) {
+                item.cantidad = 1;
+            }
+            
+            this.calcularFila(index);
+        },
+        
+        calcularFila(index) {
+            const item = this.tablaFactura[index];
+            item.subtotal = (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio) || 0);
+        },
+        
+        
+        
+        get total() {
+            return this.tablaFactura.reduce((sum, item) => sum + (parseFloat(item.subtotal) || 0), 0);
+        }
+    }
+}
+</script>
+{% endblock %}

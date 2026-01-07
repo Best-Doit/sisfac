@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Importar Clientes - SISFAC{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+    <div class="mb-6 flex justify-between items-center">
+        <h2 class="text-3xl font-bold text-gray-800">Importar Clientes desde Excel</h2>
+        <a href="/clientes" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">Volver</a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-bold text-gray-700 mb-4">Instrucciones</h3>
+        <ol class="list-decimal list-inside space-y-2 text-gray-600 mb-4">
+            <li>Descarga la plantilla Excel haciendo clic en el botón "Descargar Plantilla"</li>
+            <li>Completa la plantilla con los datos de tus clientes</li>
+            <li>Guarda el archivo Excel</li>
+            <li>Selecciona el archivo y haz clic en "Importar"</li>
+        </ol>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 class="font-bold text-blue-800 mb-2">Formato requerido:</h4>
+            <p class="text-sm text-blue-700 mb-2">El archivo Excel debe tener las siguientes columnas:</p>
+            <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
+                <li><strong>Nombre</strong> (obligatorio): Nombre completo del cliente</li>
+                <li><strong>CI</strong> (opcional): Número de cédula de identidad</li>
+            </ul>
+            <p class="text-xs text-blue-600 mt-2">
+                💡 También se reconocen: "Cédula", "Cédula de Identidad", "RUC", "RUC/CI"
+            </p>
+        </div>
+        
+        <div class="mb-4">
+            <a href="/clientes/descargar-plantilla" 
+               class="inline-block bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-semibold">
+                📥 Descargar Plantilla
+            </a>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">Seleccionar archivo Excel</label>
+                <input type="file" name="archivo" accept=".xlsx,.xls" required
+                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p class="text-sm text-yellow-800">
+                    <strong>Nota:</strong> Si un cliente ya existe (por nombre o CI), se actualizará. Si no existe, se creará uno nuevo.
+                </p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-semibold">
+                    Importar Clientes
+                </button>
+                <a href="/clientes" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-xl font-bold text-gray-700 mb-4">Ejemplo de formato</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2 border border-gray-300 text-left font-semibold">Nombre</th>
+                        <th class="px-4 py-2 border border-gray-300 text-left font-semibold">CI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="px-4 py-2 border border-gray-300">Juan Pérez</td>
+                        <td class="px-4 py-2 border border-gray-300">1234567</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2 border border-gray-300">María González</td>
+                        <td class="px-4 py-2 border border-gray-300">7654321</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2 border border-gray-300">Carlos Rodríguez</td>
+                        <td class="px-4 py-2 border border-gray-300">1122334</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

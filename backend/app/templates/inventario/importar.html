@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Importar Productos desde Excel - SISFAC{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Importar Productos desde Excel</h2>
+        <p class="text-gray-600">Sube un archivo Excel (.xlsx) con tus productos para importarlos al sistema</p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                    Seleccionar archivo Excel
+                </label>
+                <input type="file" name="archivo" accept=".xlsx,.xls" required
+                       class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="mt-2 text-sm text-gray-500">
+                    Formatos soportados: .xlsx, .xls
+                </p>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-bold text-blue-900 mb-2">📋 Formato del archivo Excel</h3>
+                <p class="text-sm text-blue-800 mb-3">
+                    El archivo debe tener las siguientes columnas (los nombres pueden variar):
+                </p>
+                <ul class="list-disc list-inside text-sm text-blue-800 space-y-1">
+                    <li><strong>Nombre de Producto</strong> (requerido) - Nombre del producto</li>
+                    <li><strong>Precio 1</strong> (requerido) - Precio principal, debe ser el más alto</li>
+                    <li><strong>Precio 2</strong> (opcional) - Precio alternativo, debe ser menor o igual que P1</li>
+                    <li><strong>Stock</strong> (opcional) - Cantidad disponible</li>
+                    <li><strong>Código</strong> (opcional) - Código del producto</li>
+                    <li><strong>Descripción</strong> (opcional) - Descripción del producto</li>
+                </ul>
+                <p class="text-sm text-blue-800 mt-3">
+                    💡 <strong>Tip:</strong> Descarga la plantilla de ejemplo haciendo clic en el botón "Descargar Plantilla" para ver el formato correcto.
+                </p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h3 class="font-bold text-yellow-900 mb-2">⚠️ Notas importantes</h3>
+                <ul class="list-disc list-inside text-sm text-yellow-800 space-y-1">
+                    <li>La primera fila debe contener los encabezados de las columnas</li>
+                    <li>Si un producto ya existe (por código o nombre), se actualizará</li>
+                    <li>Si no se proporciona código, se generará uno automáticamente</li>
+                    <li>Los valores numéricos deben estar en formato numérico, no texto</li>
+                    <li><strong>Precio 1 es obligatorio</strong> y debe ser mayor o igual que Precio 2</li>
+                </ul>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    📥 Importar Productos
+                </button>
+                <a href="/inventario/descargar-plantilla" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                    📄 Descargar Plantilla
+                </a>
+                <a href="/inventario" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="font-bold text-gray-800 mb-3">📝 Ejemplo de estructura Excel</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-300 text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2 border border-gray-300">Nombre de Producto</th>
+                        <th class="px-4 py-2 border border-gray-300">Precio 1 (Principal) *</th>
+                        <th class="px-4 py-2 border border-gray-300">Precio 2 (Opcional)</th>
+                        <th class="px-4 py-2 border border-gray-300">Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="px-4 py-2 border border-gray-300">Producto Ejemplo 1</td>
+                        <td class="px-4 py-2 border border-gray-300">75.00</td>
+                        <td class="px-4 py-2 border border-gray-300">65.00</td>
+                        <td class="px-4 py-2 border border-gray-300">100</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2 border border-gray-300">Producto Ejemplo 2</td>
+                        <td class="px-4 py-2 border border-gray-300">45.00</td>
+                        <td class="px-4 py-2 border border-gray-300">40.00</td>
+                        <td class="px-4 py-2 border border-gray-300">50</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
