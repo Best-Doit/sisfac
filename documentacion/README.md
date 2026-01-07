@@ -4,24 +4,7 @@ Bienvenido a la documentación completa del Sistema de Facturación (SISFAC).
 
 ## 📚 Índice de Documentos
 
-### 1. [PRD - Product Requirements Document](./PRD_SISFAC.md)
-**Documento Principal de Requisitos del Producto**
-
-Este es el documento más importante y completo. Contiene:
-- Visión general del proyecto
-- Objetivos y alcance
-- Requisitos funcionales detallados (RF-001 a RF-018)
-- Requisitos no funcionales (RNF-001 a RNF-034)
-- Casos de uso
-- Plan de desarrollo por fases
-- Criterios de aceptación
-- Riesgos y mitigaciones
-
-**📖 Leer primero:** Este documento para entender completamente el sistema.
-
----
-
-### 2. [Arquitectura Técnica](./ARQUITECTURA_TECNICA.md)
+### 1. [Arquitectura Técnica](./ARQUITECTURA_TECNICA.md)
 **Documento de Arquitectura del Sistema**
 
 Detalles técnicos de la arquitectura:
@@ -39,7 +22,7 @@ Detalles técnicos de la arquitectura:
 
 ---
 
-### 3. [Diseño de API](./DISENO_API.md)
+### 2. [Diseño de API](./DISENO_API.md)
 **Especificación de APIs REST**
 
 Documentación completa de la API:
@@ -124,16 +107,16 @@ Documentación completa de la API:
 
 ### Para Desarrolladores
 
-1. **Leer PRD**: Comprender requisitos completos
-2. **Revisar Arquitectura**: Entender estructura técnica
-3. **Consultar API**: Conocer endpoints disponibles
-4. **Comenzar Desarrollo**: Seguir plan de desarrollo del PRD
+1. **Revisar Arquitectura**: Entender estructura técnica
+2. **Consultar API**: Conocer endpoints disponibles
+3. **Leer Guías de Desarrollo**: Backend, frontend y flujos funcionales
+4. **Revisar Cambios Recientes**: Conocer las últimas mejoras
 
-### Para Stakeholders
+### Para Usuarios
 
-1. **Leer PRD - Secciones 1-3**: Visión, objetivos y alcance
-2. **Revisar Requisitos Funcionales**: Sección 5 del PRD
-3. **Consultar Plan de Desarrollo**: Sección 12 del PRD
+1. **Leer README Principal**: Instalación y uso básico
+2. **Consultar Guía de Flujos**: Entender cómo usar cada funcionalidad
+3. **Revisar Cambios Recientes**: Conocer nuevas características
 
 ---
 

@@ -81,9 +81,10 @@ SISFAC/
 │   └── run.py                 # Punto de entrada Flask para desarrollo
 ├── documentacion/             # Documentación funcional y técnica del sistema
 │   ├── README.md              # Índice de documentación
-│   ├── PRD_SISFAC.md          # Requisitos del producto (PRD)
 │   ├── ARQUITECTURA_TECNICA.md# Arquitectura técnica (incluye capa Electron)
-│   └── DISENO_API.md          # Diseño de APIs REST (para futuras integraciones)
+│   ├── DISENO_API.md          # Diseño de APIs REST (para futuras integraciones)
+│   ├── CAMBIOS_RECIENTES.md   # Historial de cambios y mejoras
+│   └── guia_desarrollo/       # Guías de desarrollo (backend, frontend, flujos)
 ├── sisfac.db                  # Base de datos SQLite (se crea automáticamente)
 ├── backups/                   # Directorio de backups automáticos
 ├── scripts/                   # Scripts de migración de base de datos
@@ -145,11 +146,6 @@ SISFAC/
 - Los backups se guardan en el directorio `backups/`
 - El sidebar colapsable mantiene su estado durante la navegación
 
-## 📚 Documentación
-
-- Ver [CHANGELOG.md](./CHANGELOG.md) para registro completo de cambios
-- Ver [documentacion/README.md](./documentacion/README.md) para documentación técnica completa
-- Ver [documentacion/PRD_SISFAC.md](./documentacion/PRD_SISFAC.md) para requisitos del producto
 
 ## 🔮 Próximas Mejoras
 
@@ -160,5 +156,53 @@ SISFAC/
 
 ## 📄 Licencia
 
-Este proyecto es de uso libre.
-# sisfac
+Este proyecto está bajo una licencia de **uso no comercial**. 
+
+**Permisos:**
+- ✅ Ver y estudiar el código
+- ✅ Usar el software para fines personales o educativos
+- ✅ Modificar el código para uso personal
+- ✅ Compartir el código con atribución
+
+**Restricciones:**
+- ❌ No se permite uso comercial sin autorización
+- ❌ No se permite redistribución comercial
+- ❌ No se permite modificación para uso comercial sin permiso
+
+Para uso comercial, contactar al autor.
+
+---
+
+## 👤 Créditos y Autor
+
+**Desarrollado por:** Best_Doit
+
+**Redes Sociales:**
+- 🎵 TikTok: [@best_doit](https://www.tiktok.com/@best_doit)
+
+---
+
+## 📚 Documentación
+
+Para documentación completa del sistema, consulta:
+- [Documentación Técnica](./documentacion/README.md) - Índice completo de documentación
+- [Cambios Recientes](./documentacion/CAMBIOS_RECIENTES.md) - Historial de mejoras
+- [Arquitectura Técnica](./documentacion/ARQUITECTURA_TECNICA.md) - Detalles técnicos
+- [Guía de Desarrollo](./documentacion/guia_desarrollo/README.md) - Guías para desarrolladores
+
+---
+
+## 🤝 Contribuciones
+
+Las contribuciones son bienvenidas. Por favor:
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+---
+
+## ⚠️ Disclaimer
+
+Este software se proporciona "tal cual", sin garantías de ningún tipo. El autor no se hace responsable de cualquier daño derivado del uso de este software.
