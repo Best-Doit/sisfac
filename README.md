@@ -140,9 +140,9 @@ SISFAC/
 │   └── guia_desarrollo/       # Guías de desarrollo (backend, frontend, flujos)
 ├── sisfac.db                  # Base de datos SQLite (se crea automáticamente)
 ├── backups/                   # Directorio de backups automáticos
-├── scripts/                   # Scripts de migración de base de datos
-│   ├── migrate_db.py         # Migración inicial (talonarios, estados)
-│   └── migrate_precios_unificar.py  # Migración de precios (elimina precio_3)
+├── scripts/                   # Scripts de utilidad
+│   ├── preparar_entorno_windows.bat  # Preparar entorno en Windows
+│   └── empaquetar_windows.bat        # Empaquetar aplicación en Windows
 ├── requirements.txt           # Dependencias Python
 ├── CHANGELOG.md               # Registro de cambios y mejoras
 └── README.md                  # Este archivo
