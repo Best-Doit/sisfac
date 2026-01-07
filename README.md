@@ -20,12 +20,19 @@ Construido con Flask, Tailwind CSS, Alpine.js y Electron.
 
 ## 🔧 Instalación
 
+Los scripts automatizados instalan todas las dependencias necesarias en el proyecto, incluso si ya están instaladas en el sistema.
+
 ### 🪟 Windows
 
-**Todo en uno (recomendado):**
+**Instalación completa (recomendado):**
 ```cmd
 scripts\preparar_todo_windows.bat
 ```
+Este script instala y configura automáticamente:
+- ✅ Python y entorno virtual (`venv`)
+- ✅ Todas las dependencias de Python (Flask, SQLAlchemy, etc.)
+- ✅ Node.js (si no está instalado)
+- ✅ Electron y electron-builder en el proyecto
 
 **Iniciar aplicación:**
 ```cmd
@@ -34,24 +41,29 @@ cd backend
 python run.py
 ```
 
-**Empaquetar:**
+**Empaquetar aplicación:**
 ```cmd
 scripts\empaquetar_windows.bat
 ```
 
 ### 🐧 Linux
 
-**Todo en uno (recomendado):**
+**Instalación completa (recomendado):**
 ```bash
 bash scripts/preparar_todo_linux.sh
 ```
+Este script instala y configura automáticamente:
+- ✅ Python y entorno virtual (`venv`)
+- ✅ Todas las dependencias de Python (Flask, SQLAlchemy, etc.)
+- ✅ Node.js (si no está instalado, requiere sudo)
+- ✅ Electron y electron-builder en el proyecto
 
 **Iniciar aplicación:**
 ```bash
 ./start.sh
 ```
 
-**Empaquetar:**
+**Empaquetar aplicación:**
 ```bash
 ./empaquetar.sh
 ```
@@ -59,22 +71,40 @@ bash scripts/preparar_todo_linux.sh
 ## 📦 Scripts Disponibles
 
 ### Windows
-- `scripts\preparar_todo_windows.bat` - Instala todo (Python + Node.js + Electron)
-- `scripts\preparar_entorno_windows.bat` - Solo Python
-- `scripts\instalar_nodejs_electron_windows.bat` - Solo Node.js y Electron
-- `scripts\empaquetar_windows.bat` - Empaquetar aplicación
+
+**Scripts de instalación:**
+- `scripts\preparar_todo_windows.bat` - **Todo en uno**: Instala Python, Node.js y Electron
+- `scripts\preparar_entorno_windows.bat` - Solo Python y dependencias (crea venv, instala requirements.txt)
+- `scripts\instalar_nodejs_electron_windows.bat` - Solo Node.js (si falta) y Electron en el proyecto
+
+**Scripts de uso:**
+- `scripts\empaquetar_windows.bat` - Compila backend con PyInstaller y empaqueta con Electron
 
 ### Linux
-- `scripts/preparar_todo_linux.sh` - Instala todo (Python + Node.js + Electron)
-- `scripts/instalar_nodejs_electron_linux.sh` - Solo Node.js y Electron
-- `./start.sh` - Iniciar aplicación
-- `./empaquetar.sh` - Empaquetar aplicación
+
+**Scripts de instalación:**
+- `scripts/preparar_todo_linux.sh` - **Todo en uno**: Instala Python, Node.js y Electron
+- `scripts/instalar_nodejs_electron_linux.sh` - Solo Node.js (si falta) y Electron en el proyecto
+
+**Scripts de uso:**
+- `./start.sh` - Crea venv (si no existe), instala dependencias e inicia la aplicación
+- `./empaquetar.sh` - Compila backend con PyInstaller y empaqueta con Electron
+
+**Nota:** Los scripts siempre instalan las dependencias en el proyecto, incluso si ya están instaladas en el sistema.
 
 ## 🎯 Uso Rápido
 
 1. **Preparar entorno:** Ejecuta el script "todo en uno" de tu sistema
-2. **Iniciar:** Usa `./start.sh` (Linux) o activa venv y ejecuta `python run.py` (Windows)
+   - Windows: `scripts\preparar_todo_windows.bat`
+   - Linux: `bash scripts/preparar_todo_linux.sh`
+   
+2. **Iniciar aplicación:**
+   - Linux: `./start.sh`
+   - Windows: `venv\Scripts\activate` → `cd backend` → `python run.py`
+   
 3. **Acceder:** Abre `http://localhost:5000` en tu navegador
+
+**Importante:** Los scripts instalan todas las dependencias necesarias en el proyecto. No necesitas tener Python o Node.js instalados globalmente (aunque ayuda para la primera instalación de Node.js).
 
 ## 📁 Estructura
 
