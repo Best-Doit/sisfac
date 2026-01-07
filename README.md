@@ -20,8 +20,8 @@ La interfaz está construida con Flask (templates Jinja2), Tailwind CSS y Alpine
 
 ## 📋 Requisitos
 
-- Python 3.9+
-- pip
+- **Python 3.9 o superior** (recomendado: Python 3.12)
+- **pip** (incluido con Python desde la versión 3.4+)
 
 ## 🔧 Instalación
 
@@ -29,7 +29,20 @@ La interfaz está construida con Flask (templates Jinja2), Tailwind CSS y Alpine
 
 1. Clonar o descargar el proyecto
 
-2. Crear y activar el entorno virtual:
+2. **Verificar instalación de Python y pip:**
+```bash
+# Linux/macOS
+python3 --version
+python3 -m pip --version
+
+# Windows
+python --version
+python -m pip --version
+```
+
+**Nota para Windows:** Si `python` no funciona, prueba con `py` o `python3`. Si tienes múltiples versiones instaladas, usa `py -3.12` para especificar la versión.
+
+3. Crear y activar el entorno virtual:
 ```bash
 # Linux/macOS
 python3 -m venv venv
@@ -37,24 +50,46 @@ source venv/bin/activate
 
 # Windows
 python -m venv venv
+# O si python no funciona:
+# py -3.12 -m venv venv
 venv\Scripts\activate
 ```
 
-3. Instalar dependencias:
+4. **Actualizar pip (recomendado):**
 ```bash
-pip install -r requirements.txt
+# Linux/macOS
+pip install --upgrade pip
+
+# Windows (usar python -m pip para evitar problemas)
+python -m pip install --upgrade pip
 ```
 
-4. Ejecutar la aplicación:
+5. Instalar dependencias:
+```bash
+# Linux/macOS
+pip install -r requirements.txt
+
+# Windows (usar python -m pip para asegurar que usa la versión correcta)
+python -m pip install -r requirements.txt
+```
+
+6. Ejecutar la aplicación:
 ```bash
 cd backend
 python run.py
 ```
 
-5. Abrir en el navegador:
+7. Abrir en el navegador:
 ```
 http://localhost:5000
 ```
+
+**⚠️ Solución de problemas en Windows:**
+
+- **Si `pip` no se reconoce como comando:** Usa `python -m pip` en lugar de solo `pip`
+- **Si tienes múltiples versiones de Python:** Especifica la versión: `py -3.12 -m pip install -r requirements.txt`
+- **Si Python no está en PATH:** Agrega Python a las variables de entorno del sistema o usa la ruta completa
+- **Para verificar qué versión de Python estás usando:** Ejecuta `python --version` o `py --version`
 
 ### Opción 2: Usar Scripts Automáticos
 
@@ -81,25 +116,50 @@ Este script:
 
 #### 🪟 Windows
 
+**Requisitos previos:**
+- Python 3.9 o superior instalado (recomendado: Python 3.12)
+- Verificar instalación:
+  ```cmd
+  python --version
+  python -m pip --version
+  ```
+- Si `python` no funciona, prueba con `py` o `py -3.12`
+
 **Preparar el entorno:**
-```bash
+```cmd
 scripts\preparar_entorno_windows.bat
 ```
 Este script:
-- Crea el entorno virtual (`venv`) si no existe
-- Instala todas las dependencias desde `requirements.txt`
+- Crea el entorno virtual (`venv`) si no existe usando `python -m venv`
+- Actualiza pip a la última versión
+- Instala todas las dependencias desde `requirements.txt` usando `pip install`
 - Prepara el entorno para desarrollo
+
+**Si el script falla, ejecuta manualmente:**
+```cmd
+REM Crear entorno virtual
+python -m venv venv
+
+REM Activar entorno virtual
+venv\Scripts\activate
+
+REM Actualizar pip
+python -m pip install --upgrade pip
+
+REM Instalar dependencias
+python -m pip install -r requirements.txt
+```
 
 **Iniciar la aplicación:**
 Después de preparar el entorno:
-```bash
+```cmd
 venv\Scripts\activate
 cd backend
 python run.py
 ```
 
 **Empaquetar la aplicación (Backend + Electron):**
-```bash
+```cmd
 scripts\empaquetar_windows.bat
 ```
 Este script:
@@ -108,6 +168,24 @@ Este script:
 - Genera un instalador Windows en `electron\dist\SISFAC Setup 1.0.0.exe`
 
 **Nota:** Asegúrate de tener el entorno virtual activado antes de ejecutar la aplicación manualmente.
+
+**⚠️ Problemas comunes en Windows:**
+
+1. **"pip no se reconoce como comando interno o externo"**
+   - Solución: Usa `python -m pip` en lugar de `pip`
+   - Ejemplo: `python -m pip install -r requirements.txt`
+
+2. **"python no se reconoce como comando interno o externo"**
+   - Solución: Agrega Python a PATH o usa `py` en su lugar
+   - Ejemplo: `py -3.12 -m pip install -r requirements.txt`
+
+3. **Múltiples versiones de Python instaladas**
+   - Usa `py -3.12` para especificar la versión exacta
+   - Ejemplo: `py -3.12 -m venv venv`
+
+4. **Error al crear entorno virtual**
+   - Asegúrate de tener permisos de escritura en el directorio
+   - Verifica que Python esté correctamente instalado: `python --version`
 
 ## 📁 Estructura del Proyecto
 
