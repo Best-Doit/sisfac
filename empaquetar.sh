@@ -12,109 +12,63 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Paso 0: Preservar datos del AppImage anterior (si existe)
-echo -e "${YELLOW}💾 Paso 0: Preservando datos del AppImage anterior (si existe)...${NC}"
+# Paso 0: Verificar configuración de datos
+echo -e "${YELLOW}📋 Paso 0: Verificando configuración de datos...${NC}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$SCRIPT_DIR"
 VENV_PATH="$ROOT_DIR/venv"
 
-# Buscar AppImage anterior en el directorio electron/dist
-OLD_APPIMAGE=""
-if [ -d "$ROOT_DIR/electron/dist" ]; then
-    OLD_APPIMAGE=$(find "$ROOT_DIR/electron/dist" -name "SISFAC-*.AppImage" -type f 2>/dev/null | head -1)
-fi
+echo "   ℹ️  IMPORTANTE: Los datos de producción están en ~/.sisfac/"
+echo "   ℹ️  El AppImage solo contiene código, NO datos de producción"
+echo ""
 
-if [ -n "$OLD_APPIMAGE" ] && [ -f "$OLD_APPIMAGE" ]; then
-    echo "   📦 AppImage anterior encontrado: $(basename "$OLD_APPIMAGE")"
-    echo "   🔍 Extrayendo datos del AppImage anterior..."
-    
-    # Crear directorio temporal para extraer
-    TEMP_EXTRACT=$(mktemp -d)
-    cd "$TEMP_EXTRACT"
-    
-    # Extraer AppImage
-    "$OLD_APPIMAGE" --appimage-extract >/dev/null 2>&1
-    
-    if [ -d "squashfs-root" ]; then
-        # Buscar base de datos en el AppImage extraído
-        # Puede estar en resources/ o en el directorio raíz del AppImage
-        DB_SOURCES=(
-            "squashfs-root/resources/sisfac.db"
-            "squashfs-root/resources/app.asar.unpacked/sisfac.db"
-            "squashfs-root/sisfac.db"
-        )
-        
-        BACKUP_SOURCES=(
-            "squashfs-root/resources/backups"
-            "squashfs-root/resources/app.asar.unpacked/backups"
-            "squashfs-root/backups"
-        )
-        
-        # Copiar base de datos si existe
-        for db_source in "${DB_SOURCES[@]}"; do
-            if [ -f "$db_source" ]; then
-                echo "   ✅ Base de datos encontrada en AppImage anterior"
-                cp "$db_source" "$ROOT_DIR/sisfac.db"
-                echo "   💾 Base de datos copiada a: $ROOT_DIR/sisfac.db"
-                break
-            fi
-        done
-        
-        # Copiar backups si existen
-        for backup_source in "${BACKUP_SOURCES[@]}"; do
-            if [ -d "$backup_source" ] && [ "$(ls -A $backup_source 2>/dev/null)" ]; then
-                echo "   ✅ Backups encontrados en AppImage anterior"
-                mkdir -p "$ROOT_DIR/backups"
-                cp -r "$backup_source"/* "$ROOT_DIR/backups/" 2>/dev/null || true
-                echo "   💾 Backups copiados a: $ROOT_DIR/backups/"
-                break
-            fi
-        done
-        
-        # Limpiar
-        cd "$ROOT_DIR"
-        rm -rf "$TEMP_EXTRACT"
-    else
-        echo "   ⚠️  No se pudo extraer el AppImage anterior"
-        cd "$ROOT_DIR"
-        rm -rf "$TEMP_EXTRACT"
-    fi
-else
-    echo "   ℹ️  No se encontró AppImage anterior, se usará la base de datos actual del proyecto"
-fi
-
-# Verificar si existe base de datos en el proyecto
+# Verificar si existe base de datos en el proyecto (solo para desarrollo/inicial)
 if [ -f "$ROOT_DIR/sisfac.db" ]; then
     DB_SIZE=$(du -h "$ROOT_DIR/sisfac.db" | cut -f1)
-    echo "   ✅ Base de datos encontrada en proyecto: $DB_SIZE"
+    echo "   ⚠️  Base de datos encontrada en proyecto: $DB_SIZE"
     echo "      📍 Ubicación: $ROOT_DIR/sisfac.db"
+    echo "      ⚠️  ADVERTENCIA: Esta base de datos se incluirá en el AppImage"
+    echo "      ⚠️  Solo debe usarse para datos iniciales/de prueba"
+    echo "      ✅ Los datos de producción están en ~/.sisfac/ y NO se tocan"
 else
-    echo "   ℹ️  No hay base de datos en el proyecto, se creará una nueva al ejecutar"
+    echo "   ✅ No hay base de datos en el proyecto (correcto para producción)"
+    echo "      ℹ️  Se creará una nueva base de datos vacía al ejecutar por primera vez"
+    echo "      ✅ Los datos de producción están en ~/.sisfac/ y NO se tocan"
 fi
 
-# Verificar backups
+# Verificar backups (solo para desarrollo/inicial)
 if [ -d "$ROOT_DIR/backups" ] && [ "$(ls -A $ROOT_DIR/backups 2>/dev/null)" ]; then
     BACKUP_COUNT=$(ls -1 "$ROOT_DIR/backups"/*.db 2>/dev/null | wc -l)
     BACKUP_SIZE=$(du -sh "$ROOT_DIR/backups" 2>/dev/null | cut -f1)
-    echo "   ✅ Backups encontrados: $BACKUP_COUNT archivo(s) ($BACKUP_SIZE)"
-    echo "      📍 Ubicación: $ROOT_DIR/backups/"
+    echo "   ⚠️  Backups encontrados en proyecto: $BACKUP_COUNT archivo(s) ($BACKUP_SIZE)"
+    echo "      ⚠️  ADVERTENCIA: Estos backups se incluirán en el AppImage"
+    echo "      ⚠️  Solo deben usarse para datos iniciales/de prueba"
+    echo "      ✅ Los backups de producción están en ~/.sisfac/backups/ y NO se tocan"
 else
-    echo "   ℹ️  No hay backups en el proyecto"
-    # Crear directorio backups vacío para que se incluya en el empaquetado
-    mkdir -p "$ROOT_DIR/backups"
+    echo "   ✅ No hay backups en el proyecto (correcto para producción)"
+    echo "      ℹ️  El directorio de backups se creará en ~/.sisfac/backups/ al ejecutar"
+    # Crear directorio backups vacío para que se incluya en el empaquetado (opcional)
+    mkdir -p "$ROOT_DIR/backups" 2>/dev/null || true
 fi
 
 echo ""
-echo "   📋 Resumen de datos que se incluirán en el nuevo AppImage:"
+echo "   📋 Resumen de lo que se incluirá en el nuevo AppImage:"
+echo "      ✅ Código de la aplicación (backend + frontend)"
 if [ -f "$ROOT_DIR/sisfac.db" ]; then
-    echo "      ✅ Base de datos: sisfac.db"
+    echo "      ⚠️  Base de datos del proyecto (solo inicial/de prueba)"
 else
-    echo "      ⚠️  Base de datos: No existe (se creará nueva)"
+    echo "      ✅ Base de datos: No incluida (se creará nueva al ejecutar)"
 fi
 if [ -d "$ROOT_DIR/backups" ]; then
-    echo "      ✅ Directorio de backups: backups/"
+    if [ "$(ls -A $ROOT_DIR/backups 2>/dev/null)" ]; then
+        echo "      ⚠️  Backups del proyecto (solo iniciales/de prueba)"
+    else
+        echo "      ✅ Directorio de backups: Vacío (correcto)"
+    fi
 fi
+echo ""
+echo "   🔒 GARANTÍA: Los datos de producción en ~/.sisfac/ NO se tocarán"
 echo ""
 
 # Paso 1: Recompilar backend con PyInstaller
@@ -279,35 +233,40 @@ if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
     ls -lh "$APPIMAGE_FILE" | awk '{print "   " $5}'
     echo ""
     
-    # Verificar que los datos se incluyeron (extraer temporalmente y verificar)
-    echo "🔍 Verificando que los datos se incluyeron correctamente..."
+    # Verificar que el código se incluyó correctamente
+    echo "🔍 Verificando que el código se incluyó correctamente..."
     TEMP_VERIFY=$(mktemp -d)
     cd "$TEMP_VERIFY"
     
     "$APPIMAGE_FILE" --appimage-extract >/dev/null 2>&1
     
     if [ -d "squashfs-root" ]; then
-        DATA_FOUND=0
+        CODE_FOUND=0
         
-        # Verificar base de datos
-        if [ -f "squashfs-root/resources/sisfac.db" ] || [ -f "squashfs-root/resources/app.asar.unpacked/sisfac.db" ]; then
-            echo "   ✅ Base de datos incluida en el AppImage"
-            DATA_FOUND=1
+        # Verificar backend compilado
+        if [ -f "squashfs-root/resources/backend/dist/sisfac-backend" ]; then
+            echo "   ✅ Backend compilado incluido en el AppImage"
+            CODE_FOUND=1
         else
-            echo "   ⚠️  Base de datos no encontrada en el AppImage (se creará nueva al ejecutar)"
+            echo "   ⚠️  Backend compilado no encontrado en el AppImage"
         fi
         
-        # Verificar backups
-        if [ -d "squashfs-root/resources/backups" ] || [ -d "squashfs-root/resources/app.asar.unpacked/backups" ]; then
-            BACKUP_COUNT=$(find squashfs-root/resources -name "*.db" -path "*/backups/*" 2>/dev/null | wc -l)
-            if [ "$BACKUP_COUNT" -gt 0 ]; then
-                echo "   ✅ Backups incluidos en el AppImage: $BACKUP_COUNT archivo(s)"
-                DATA_FOUND=1
-            fi
+        # Verificar main.js de Electron
+        if [ -f "squashfs-root/resources/app.asar" ] || [ -f "squashfs-root/resources/app/main.js" ]; then
+            echo "   ✅ Código de Electron incluido en el AppImage"
+            CODE_FOUND=1
         fi
         
-        if [ "$DATA_FOUND" -eq 1 ]; then
-            echo "   ✅ Los datos se preservaron correctamente"
+        # Verificar base de datos (opcional, solo inicial)
+        if [ -f "squashfs-root/resources/sisfac.db" ] || [ -f "squashfs-root/resources/app.asar.unpacked/sisfac.db" ]; then
+            DB_SIZE=$(du -h "squashfs-root/resources/sisfac.db" 2>/dev/null | cut -f1 || echo "N/A")
+            echo "   ℹ️  Base de datos inicial incluida: $DB_SIZE (solo para primera ejecución)"
+        else
+            echo "   ✅ Base de datos inicial no incluida (se creará nueva al ejecutar)"
+        fi
+        
+        if [ "$CODE_FOUND" -eq 1 ]; then
+            echo "   ✅ El código se incluyó correctamente"
         fi
     fi
     
@@ -323,7 +282,10 @@ if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
     echo "💡 O usa el script ejecutar_appimage.sh:"
     echo "   ./ejecutar_appimage.sh $APPIMAGE_FILE"
     echo ""
-    echo "📝 Nota: Si tenías datos en el AppImage anterior, se han preservado en el nuevo."
+    echo "📝 IMPORTANTE:"
+    echo "   ✅ Los datos de producción están en ~/.sisfac/ y NO se tocan"
+    echo "   ✅ Este AppImage solo actualiza el código, no los datos"
+    echo "   ✅ Al ejecutar, la app usará los datos existentes en ~/.sisfac/"
 else
     echo ""
     echo "❌ Error: No se generó el AppImage"

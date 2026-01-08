@@ -39,6 +39,34 @@ Documentación completa de la API:
 
 ---
 
+### 3. [Guía de Empaquetado](./EMPAQUETADO.md)
+**Cómo empaquetar la aplicación**
+
+Guía completa para crear ejecutables:
+- Empaquetado rápido con script automatizado
+- Empaquetado manual paso a paso
+- Requisitos previos
+- Ejecución del AppImage
+- Solución de problemas
+
+**📦 Para distribución:** Documento necesario para crear ejecutables.
+
+---
+
+### 4. [Empaquetado Seguro - Protección de Datos](./EMPAQUETADO_SEGURO.md)
+**Protección de datos durante actualizaciones**
+
+Garantías de seguridad:
+- Ubicación de datos en producción
+- Flujo de actualización seguro
+- Protección de datos de producción
+- Checklist de empaquetado
+- Verificación post-empaquetado
+
+**🔒 Para producción:** Documento crítico sobre protección de datos.
+
+---
+
 ## 🎯 Stack Tecnológico
 
 ### Frontend

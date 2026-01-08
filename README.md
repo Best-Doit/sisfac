@@ -87,9 +87,13 @@ SISFAC/
 
 ## 📚 Documentación
 
-- [Documentación Técnica](./documentacion/README.md)
-- [Cambios Recientes](./documentacion/CAMBIOS_RECIENTES.md)
-- [Arquitectura Técnica](./documentacion/ARQUITECTURA_TECNICA.md)
+Toda la documentación está en el directorio [`documentacion/`](./documentacion/):
+
+- [📖 Índice de Documentación](./documentacion/README.md) - Guía completa
+- [🏗️ Arquitectura Técnica](./documentacion/ARQUITECTURA_TECNICA.md) - Estructura del sistema
+- [📦 Guía de Empaquetado](./documentacion/EMPAQUETADO.md) - Crear ejecutables
+- [🔒 Empaquetado Seguro](./documentacion/EMPAQUETADO_SEGURO.md) - Protección de datos
+- [📝 Cambios Recientes](./documentacion/CAMBIOS_RECIENTES.md) - Últimas actualizaciones
 
 ## 📄 Licencia
 

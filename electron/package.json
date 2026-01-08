@@ -38,12 +38,14 @@
       {
         "from": "../sisfac.db",
         "to": "sisfac.db",
-        "filter": ["**/*"]
+        "filter": ["**/*"],
+        "optional": true
       },
       {
         "from": "../backups",
         "to": "backups",
-        "filter": ["**/*"]
+        "filter": ["**/*"],
+        "optional": true
       },
       {
         "from": "build/icon.png",
@@ -72,7 +74,7 @@
         "Comment": "Sistema de Facturación y Gestión de Inventario",
         "Type": "Application",
         "Categories": "Office;",
-        "Icon": "${productName}"
+        "Icon": "sisfac-desktop"
       }
     },
     "afterPack": "./build/afterPack.js"

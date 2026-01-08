@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, flash, send_file, jsonify, redirect, url_for, make_response
 from app import db
 from app.models import Cliente, Producto, Factura, DetalleFactura, Talonario, Configuracion
+from app.config import get_database_path, get_backups_dir
 from sqlalchemy import text, func
 import os
-import sys
 import shutil
 from datetime import datetime, timedelta
 from openpyxl import Workbook
@@ -11,94 +11,11 @@ from openpyxl.styles import Font, Alignment, PatternFill
 
 bp = Blueprint('ajustes', __name__)
 
-def get_db_path():
-    """Obtiene la ruta del archivo de base de datos"""
-    try:
-        # Si está empaquetado con PyInstaller
-        if getattr(sys, 'frozen', False):
-            # Cuando está empaquetado y ejecutado desde Electron:
-            # - Los recursos están en un sistema de archivos de solo lectura (AppImage)
-            # - Necesitamos usar un directorio escribible en el home del usuario
-            
-            # Usar el directorio home del usuario para guardar la base de datos
-            home_dir = os.path.expanduser('~')
-            app_data_dir = os.path.join(home_dir, '.sisfac')
-            
-            # Crear el directorio si no existe
-            os.makedirs(app_data_dir, exist_ok=True)
-            
-            db_path = os.path.join(app_data_dir, 'sisfac.db')
-            
-            # Si existe una base de datos en los recursos (solo lectura), copiarla al directorio escribible
-            # solo la primera vez
-            resources_db = None
-            try:
-                cwd = os.getcwd()
-                resources_db = os.path.join(cwd, 'sisfac.db')
-                if not os.path.exists(resources_db):
-                    executable_dir = os.path.dirname(sys.executable)
-                    resources_dir = os.path.dirname(os.path.dirname(executable_dir))
-                    resources_db = os.path.join(resources_dir, 'sisfac.db')
-            except:
-                pass
-            
-            # Si hay una base de datos en recursos y no existe en el directorio escribible, copiarla
-            if resources_db and os.path.exists(resources_db) and not os.path.exists(db_path):
-                try:
-                    shutil.copy2(resources_db, db_path)
-                    print(f"📋 Base de datos copiada desde recursos a: {db_path}")
-                except Exception as e:
-                    print(f"⚠️ No se pudo copiar la base de datos desde recursos: {e}")
-        else:
-            # Modo desarrollo: usar ruta relativa al proyecto
-            basedir = os.path.abspath(os.path.dirname(__file__))
-            db_path = os.path.join(basedir, "..", "..", "sisfac.db")
-            db_path = os.path.abspath(db_path)
-        
-        return db_path
-    except Exception as e:
-        import traceback
-        print(f"❌ Error en get_db_path: {e}")
-        traceback.print_exc()
-        # Fallback: usar directorio actual
-        return os.path.join(os.getcwd(), 'sisfac.db')
-
-def get_backups_dir():
-    """Obtiene o crea el directorio de backups"""
-    try:
-        # Si está empaquetado con PyInstaller
-        if getattr(sys, 'frozen', False):
-            # Cuando está empaquetado y ejecutado desde Electron:
-            # - Los recursos están en un sistema de archivos de solo lectura (AppImage)
-            # - Necesitamos usar un directorio escribible en el home del usuario
-            
-            # Usar el directorio home del usuario para guardar los backups
-            home_dir = os.path.expanduser('~')
-            app_data_dir = os.path.join(home_dir, '.sisfac')
-            backups_dir = os.path.join(app_data_dir, 'backups')
-        else:
-            # Modo desarrollo: usar ruta relativa al proyecto
-            basedir = os.path.abspath(os.path.dirname(__file__))
-            backups_dir = os.path.join(basedir, "..", "..", "backups")
-            backups_dir = os.path.abspath(backups_dir)
-        
-        # Crear el directorio si no existe
-        os.makedirs(backups_dir, exist_ok=True)
-        return backups_dir
-    except Exception as e:
-        import traceback
-        print(f"❌ Error en get_backups_dir: {e}")
-        traceback.print_exc()
-        # Fallback: usar directorio actual
-        backups_dir = os.path.join(os.getcwd(), 'backups')
-        os.makedirs(backups_dir, exist_ok=True)
-        return backups_dir
-
 @bp.route('/')
 def index():
     """Pantalla principal de ajustes"""
     try:
-        db_path = get_db_path()
+        db_path = get_database_path()
         db_size = 0
         if os.path.exists(db_path):
             db_size = os.path.getsize(db_path)
@@ -209,7 +126,7 @@ def index():
 def crear_backup():
     """Crear una copia de seguridad de la base de datos"""
     try:
-        db_path = get_db_path()
+        db_path = get_database_path()
         if not os.path.exists(db_path):
             flash('No se encontró la base de datos', 'error')
             return jsonify({'success': False, 'message': 'No se encontró la base de datos'})
@@ -244,7 +161,7 @@ def restaurar_backup():
             flash('El archivo debe ser una base de datos (.db)', 'error')
             return jsonify({'success': False, 'message': 'El archivo debe ser una base de datos (.db)'})
         
-        db_path = get_db_path()
+        db_path = get_database_path()
         
         # Cerrar todas las conexiones de la base de datos antes de restaurar
         db.session.close()
@@ -312,7 +229,7 @@ def borrar_datos():
         print("✅ Confirmación válida, procediendo a borrar datos...")
         
         # Crear backup antes de borrar
-        db_path = get_db_path()
+        db_path = get_database_path()
         backup_creado = False
         if os.path.exists(db_path):
             try:
