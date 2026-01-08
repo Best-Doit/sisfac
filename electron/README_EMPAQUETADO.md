@@ -11,26 +11,10 @@ Empaqueta Electron con el backend Flask como archivos Python. Requiere que el us
 #### Linux (AppImage)
 ```bash
 cd electron
-npm run build:linux
+npm run build
 ```
 
 El ejecutable se generará en `electron/dist/SISFAC-1.0.0.AppImage`
-
-#### Windows
-```bash
-cd electron
-npm run build:win
-```
-
-El instalador se generará en `electron/dist/SISFAC Setup 1.0.0.exe`
-
-#### macOS
-```bash
-cd electron
-npm run build:mac
-```
-
-El archivo DMG se generará en `electron/dist/SISFAC-1.0.0.dmg`
 
 ---
 

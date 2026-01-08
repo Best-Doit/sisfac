@@ -22,8 +22,7 @@ function startBackend() {
     // Modo empaquetado: usar el ejecutable de PyInstaller
     // El ejecutable está en extraResources/backend/dist/
     const resourcesPath = process.resourcesPath;
-    const executableName = process.platform === 'win32' ? 'sisfac-backend.exe' : 'sisfac-backend';
-    backendExecutable = path.join(resourcesPath, 'backend', 'dist', executableName);
+    backendExecutable = path.join(resourcesPath, 'backend', 'dist', 'sisfac-backend');
     projectRoot = resourcesPath;
     
     // Verificar que el ejecutable existe
@@ -41,9 +40,7 @@ function startBackend() {
     projectRoot = path.join(__dirname, '..');
     const backendScript = path.join(projectRoot, 'backend', 'run.py');
     const venvPython = path.join(projectRoot, 'venv', 'bin', 'python');
-    const pythonCmd = process.platform === 'win32'
-      ? 'python'
-      : (fs.existsSync(venvPython) ? venvPython : 'python3');
+    const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python3';
     
     backendProcess = spawn(pythonCmd, [backendScript], {
       cwd: projectRoot,
@@ -117,9 +114,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
 });
 
 app.on('will-quit', () => {

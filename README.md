@@ -22,30 +22,6 @@ Construido con Flask, Tailwind CSS, Alpine.js y Electron.
 
 Los scripts automatizados instalan todas las dependencias necesarias en el proyecto, incluso si ya están instaladas en el sistema.
 
-### 🪟 Windows
-
-**Instalación completa (recomendado):**
-```cmd
-scripts\preparar_todo_windows.bat
-```
-Este script instala y configura automáticamente:
-- ✅ Python y entorno virtual (`venv`)
-- ✅ Todas las dependencias de Python (Flask, SQLAlchemy, etc.)
-- ✅ Node.js (si no está instalado)
-- ✅ Electron y electron-builder en el proyecto
-
-**Iniciar aplicación:**
-```cmd
-venv\Scripts\activate
-cd backend
-python run.py
-```
-
-**Empaquetar aplicación:**
-```cmd
-scripts\empaquetar_windows.bat
-```
-
 ### 🐧 Linux
 
 **Instalación completa (recomendado):**
@@ -70,16 +46,6 @@ Este script instala y configura automáticamente:
 
 ## 📦 Scripts Disponibles
 
-### Windows
-
-**Scripts de instalación:**
-- `scripts\preparar_todo_windows.bat` - **Todo en uno**: Instala Python, Node.js y Electron
-- `scripts\preparar_entorno_windows.bat` - Solo Python y dependencias (crea venv, instala requirements.txt)
-- `scripts\instalar_nodejs_electron_windows.bat` - Solo Node.js (si falta) y Electron en el proyecto
-
-**Scripts de uso:**
-- `scripts\empaquetar_windows.bat` - Compila backend con PyInstaller y empaqueta con Electron
-
 ### Linux
 
 **Scripts de instalación:**
@@ -94,13 +60,15 @@ Este script instala y configura automáticamente:
 
 ## 🎯 Uso Rápido
 
-1. **Preparar entorno:** Ejecuta el script "todo en uno" de tu sistema
-   - Windows: `scripts\preparar_todo_windows.bat`
-   - Linux: `bash scripts/preparar_todo_linux.sh`
+1. **Preparar entorno:** Ejecuta el script "todo en uno"
+   ```bash
+   bash scripts/preparar_todo_linux.sh
+   ```
    
 2. **Iniciar aplicación:**
-   - Linux: `./start.sh`
-   - Windows: `venv\Scripts\activate` → `cd backend` → `python run.py`
+   ```bash
+   ./start.sh
+   ```
    
 3. **Acceder:** Abre `http://localhost:5000` en tu navegador
 

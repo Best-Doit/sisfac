@@ -12,13 +12,113 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Paso 1: Recompilar backend con PyInstaller
-echo -e "${YELLOW}📦 Paso 1: Recompilando backend con PyInstaller...${NC}"
+# Paso 0: Preservar datos del AppImage anterior (si existe)
+echo -e "${YELLOW}💾 Paso 0: Preservando datos del AppImage anterior (si existe)...${NC}"
 
-# Detectar y activar entorno virtual
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$SCRIPT_DIR"
 VENV_PATH="$ROOT_DIR/venv"
+
+# Buscar AppImage anterior en el directorio electron/dist
+OLD_APPIMAGE=""
+if [ -d "$ROOT_DIR/electron/dist" ]; then
+    OLD_APPIMAGE=$(find "$ROOT_DIR/electron/dist" -name "SISFAC-*.AppImage" -type f 2>/dev/null | head -1)
+fi
+
+if [ -n "$OLD_APPIMAGE" ] && [ -f "$OLD_APPIMAGE" ]; then
+    echo "   📦 AppImage anterior encontrado: $(basename "$OLD_APPIMAGE")"
+    echo "   🔍 Extrayendo datos del AppImage anterior..."
+    
+    # Crear directorio temporal para extraer
+    TEMP_EXTRACT=$(mktemp -d)
+    cd "$TEMP_EXTRACT"
+    
+    # Extraer AppImage
+    "$OLD_APPIMAGE" --appimage-extract >/dev/null 2>&1
+    
+    if [ -d "squashfs-root" ]; then
+        # Buscar base de datos en el AppImage extraído
+        # Puede estar en resources/ o en el directorio raíz del AppImage
+        DB_SOURCES=(
+            "squashfs-root/resources/sisfac.db"
+            "squashfs-root/resources/app.asar.unpacked/sisfac.db"
+            "squashfs-root/sisfac.db"
+        )
+        
+        BACKUP_SOURCES=(
+            "squashfs-root/resources/backups"
+            "squashfs-root/resources/app.asar.unpacked/backups"
+            "squashfs-root/backups"
+        )
+        
+        # Copiar base de datos si existe
+        for db_source in "${DB_SOURCES[@]}"; do
+            if [ -f "$db_source" ]; then
+                echo "   ✅ Base de datos encontrada en AppImage anterior"
+                cp "$db_source" "$ROOT_DIR/sisfac.db"
+                echo "   💾 Base de datos copiada a: $ROOT_DIR/sisfac.db"
+                break
+            fi
+        done
+        
+        # Copiar backups si existen
+        for backup_source in "${BACKUP_SOURCES[@]}"; do
+            if [ -d "$backup_source" ] && [ "$(ls -A $backup_source 2>/dev/null)" ]; then
+                echo "   ✅ Backups encontrados en AppImage anterior"
+                mkdir -p "$ROOT_DIR/backups"
+                cp -r "$backup_source"/* "$ROOT_DIR/backups/" 2>/dev/null || true
+                echo "   💾 Backups copiados a: $ROOT_DIR/backups/"
+                break
+            fi
+        done
+        
+        # Limpiar
+        cd "$ROOT_DIR"
+        rm -rf "$TEMP_EXTRACT"
+    else
+        echo "   ⚠️  No se pudo extraer el AppImage anterior"
+        cd "$ROOT_DIR"
+        rm -rf "$TEMP_EXTRACT"
+    fi
+else
+    echo "   ℹ️  No se encontró AppImage anterior, se usará la base de datos actual del proyecto"
+fi
+
+# Verificar si existe base de datos en el proyecto
+if [ -f "$ROOT_DIR/sisfac.db" ]; then
+    DB_SIZE=$(du -h "$ROOT_DIR/sisfac.db" | cut -f1)
+    echo "   ✅ Base de datos encontrada en proyecto: $DB_SIZE"
+    echo "      📍 Ubicación: $ROOT_DIR/sisfac.db"
+else
+    echo "   ℹ️  No hay base de datos en el proyecto, se creará una nueva al ejecutar"
+fi
+
+# Verificar backups
+if [ -d "$ROOT_DIR/backups" ] && [ "$(ls -A $ROOT_DIR/backups 2>/dev/null)" ]; then
+    BACKUP_COUNT=$(ls -1 "$ROOT_DIR/backups"/*.db 2>/dev/null | wc -l)
+    BACKUP_SIZE=$(du -sh "$ROOT_DIR/backups" 2>/dev/null | cut -f1)
+    echo "   ✅ Backups encontrados: $BACKUP_COUNT archivo(s) ($BACKUP_SIZE)"
+    echo "      📍 Ubicación: $ROOT_DIR/backups/"
+else
+    echo "   ℹ️  No hay backups en el proyecto"
+    # Crear directorio backups vacío para que se incluya en el empaquetado
+    mkdir -p "$ROOT_DIR/backups"
+fi
+
+echo ""
+echo "   📋 Resumen de datos que se incluirán en el nuevo AppImage:"
+if [ -f "$ROOT_DIR/sisfac.db" ]; then
+    echo "      ✅ Base de datos: sisfac.db"
+else
+    echo "      ⚠️  Base de datos: No existe (se creará nueva)"
+fi
+if [ -d "$ROOT_DIR/backups" ]; then
+    echo "      ✅ Directorio de backups: backups/"
+fi
+echo ""
+
+# Paso 1: Recompilar backend con PyInstaller
+echo -e "${YELLOW}📦 Paso 1: Recompilando backend con PyInstaller...${NC}"
 
 if [ -d "$VENV_PATH" ]; then
     echo "🔧 Activando entorno virtual..."
@@ -178,12 +278,52 @@ if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
     echo "📊 Tamaño del archivo:"
     ls -lh "$APPIMAGE_FILE" | awk '{print "   " $5}'
     echo ""
+    
+    # Verificar que los datos se incluyeron (extraer temporalmente y verificar)
+    echo "🔍 Verificando que los datos se incluyeron correctamente..."
+    TEMP_VERIFY=$(mktemp -d)
+    cd "$TEMP_VERIFY"
+    
+    "$APPIMAGE_FILE" --appimage-extract >/dev/null 2>&1
+    
+    if [ -d "squashfs-root" ]; then
+        DATA_FOUND=0
+        
+        # Verificar base de datos
+        if [ -f "squashfs-root/resources/sisfac.db" ] || [ -f "squashfs-root/resources/app.asar.unpacked/sisfac.db" ]; then
+            echo "   ✅ Base de datos incluida en el AppImage"
+            DATA_FOUND=1
+        else
+            echo "   ⚠️  Base de datos no encontrada en el AppImage (se creará nueva al ejecutar)"
+        fi
+        
+        # Verificar backups
+        if [ -d "squashfs-root/resources/backups" ] || [ -d "squashfs-root/resources/app.asar.unpacked/backups" ]; then
+            BACKUP_COUNT=$(find squashfs-root/resources -name "*.db" -path "*/backups/*" 2>/dev/null | wc -l)
+            if [ "$BACKUP_COUNT" -gt 0 ]; then
+                echo "   ✅ Backups incluidos en el AppImage: $BACKUP_COUNT archivo(s)"
+                DATA_FOUND=1
+            fi
+        fi
+        
+        if [ "$DATA_FOUND" -eq 1 ]; then
+            echo "   ✅ Los datos se preservaron correctamente"
+        fi
+    fi
+    
+    # Limpiar
+    cd "$ROOT_DIR"
+    rm -rf "$TEMP_VERIFY"
+    
+    echo ""
     echo "🚀 Para ejecutar:"
     echo "   chmod +x $APPIMAGE_FILE"
     echo "   ./$APPIMAGE_FILE"
     echo ""
     echo "💡 O usa el script ejecutar_appimage.sh:"
     echo "   ./ejecutar_appimage.sh $APPIMAGE_FILE"
+    echo ""
+    echo "📝 Nota: Si tenías datos en el AppImage anterior, se han preservado en el nuevo."
 else
     echo ""
     echo "❌ Error: No se generó el AppImage"

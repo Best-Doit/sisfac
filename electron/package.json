@@ -5,10 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "ELECTRON_DISABLE_SANDBOX=1 electron .",
-    "build": "electron-builder",
-    "build:linux": "electron-builder --linux",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
+    "build": "electron-builder --linux",
     "dist": "electron-builder --linux AppImage"
   },
   "author": "",
@@ -40,7 +37,17 @@
       },
       {
         "from": "../sisfac.db",
-        "to": "sisfac.db"
+        "to": "sisfac.db",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backups",
+        "to": "backups",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
       }
     ],
     "linux": {
@@ -64,39 +71,10 @@
         "Name": "SISFAC",
         "Comment": "Sistema de Facturación y Gestión de Inventario",
         "Type": "Application",
-        "Categories": "Office;"
+        "Categories": "Office;",
+        "Icon": "${productName}"
       }
     },
-    "afterPack": "./build/afterPack.js",
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "build/icon.ico"
-    },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "category": "public.app-category.business",
-      "icon": "build/icon.icns"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    }
+    "afterPack": "./build/afterPack.js"
   }
 }

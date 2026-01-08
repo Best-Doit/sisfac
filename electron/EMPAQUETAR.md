@@ -21,33 +21,14 @@ chmod +x dist/SISFAC-1.0.0.AppImage
 
 ## 📦 Opciones de Empaquetado
 
-### Linux
+### Linux (AppImage)
 ```bash
 cd electron
-npm run build:linux
+npm run build
 ```
 
 Genera:
 - `SISFAC-1.0.0.AppImage` (ejecutable portable)
-- `sisfac-desktop_1.0.0_amd64.deb` (instalador Debian/Ubuntu)
-
-### Windows
-```bash
-cd electron
-npm run build:win
-```
-
-Genera:
-- `SISFAC Setup 1.0.0.exe` (instalador NSIS)
-
-### macOS
-```bash
-cd electron
-npm run build:mac
-```
-
-Genera:
-- `SISFAC-1.0.0.dmg` (imagen de disco)
 
 ---
 
@@ -69,9 +50,7 @@ Para crear un ejecutable que NO requiera Python instalado, necesitas empaquetar 
 
 ```bash
 # Activar entorno virtual
-source venv/bin/activate  # Linux/Mac
-# o
-venv\Scripts\activate     # Windows
+source venv/bin/activate
 
 # Instalar PyInstaller
 pip install pyinstaller
@@ -81,7 +60,7 @@ cd backend
 pyinstaller --onefile --name sisfac-backend --add-data "app:app" run.py
 ```
 
-Esto creará `backend/dist/sisfac-backend` (o `sisfac-backend.exe` en Windows)
+Esto creará `backend/dist/sisfac-backend`
 
 #### Paso 2: Actualizar main.js
 
