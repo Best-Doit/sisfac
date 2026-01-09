@@ -1,14 +1,20 @@
 {
   "name": "sisfac-desktop",
   "version": "1.0.0",
-  "description": "Aplicación de escritorio SISFAC (Flask + Electron)",
+  "description": "Sistema de Facturación y Gestión de Inventario - AppImage Autónomo",
   "main": "main.js",
+  "homepage": "https://github.com/sisfac/sisfac",
   "scripts": {
     "start": "ELECTRON_DISABLE_SANDBOX=1 electron .",
     "build": "electron-builder --linux",
-    "dist": "electron-builder --linux AppImage"
+    "dist": "electron-builder --linux --publish never",
+    "dist:deb": "electron-builder --linux deb --publish never",
+    "dist:rpm": "electron-builder --linux rpm --publish never"
   },
-  "author": "",
+  "author": {
+    "name": "SISFAC",
+    "email": "sisfac@example.com"
+  },
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
@@ -17,35 +23,33 @@
   "build": {
     "appId": "com.sisfac.desktop",
     "productName": "SISFAC",
+    "compression": "maximum",
     "directories": {
       "buildResources": "build",
       "output": "dist"
     },
     "files": [
       "main.js",
+      "preload.js",
       "package.json",
-      "!node_modules/**/*"
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
-    "asarUnpack": [
-      "**/backend/**/*",
-      "**/*.db"
-    ],
+    "asar": true,
+    "asarUnpack": [],
     "extraResources": [
       {
-        "from": "../backend/dist",
-        "to": "backend/dist"
-      },
-      {
-        "from": "../sisfac.db",
-        "to": "sisfac.db",
-        "filter": ["**/*"],
-        "optional": true
-      },
-      {
-        "from": "../backups",
-        "to": "backups",
-        "filter": ["**/*"],
-        "optional": true
+        "from": "../backend/dist/sisfac-backend",
+        "to": "backend/sisfac-backend"
       },
       {
         "from": "build/icon.png",
@@ -55,28 +59,35 @@
     "linux": {
       "target": [
         {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
+          "target": "deb",
+          "arch": ["x64"]
         }
       ],
       "category": "Office",
       "icon": "build/icon.png",
       "executableName": "sisfac-desktop",
-      "synopsis": "Sistema de Facturación",
-      "description": "Sistema de Facturación y Gestión de Inventario"
-    },
-    "appImage": {
-      "artifactName": "${productName}-${version}.${ext}",
+      "executableArgs": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-zygote"],
+      "synopsis": "Sistema de Facturación y Gestión de Inventario",
+      "description": "Aplicación de escritorio para gestión de facturación, clientes e inventario. Totalmente autónoma, sin dependencias externas.",
       "desktop": {
         "Name": "SISFAC",
         "Comment": "Sistema de Facturación y Gestión de Inventario",
-        "Type": "Application",
-        "Categories": "Office;",
-        "Icon": "sisfac-desktop"
+        "Categories": "Office;Finance;",
+        "StartupNotify": "true",
+        "Terminal": "false"
       }
     },
-    "afterPack": "./build/afterPack.js"
+    "deb": {
+      "depends": [],
+      "category": "Office",
+      "maintainer": "SISFAC <sisfac@example.com>",
+      "afterInstall": "./build/postinst.sh"
+    },
+    "afterPack": "./build/afterPack.js",
+    "afterAllArtifactBuild": "./build/afterAllArtifactBuild.js",
+    "nsis": null,
+    "dmg": null,
+    "mac": null,
+    "win": null
   }
 }

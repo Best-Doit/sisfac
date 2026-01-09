@@ -20,6 +20,8 @@ Construido con Flask, Tailwind CSS, Alpine.js y Electron.
 
 ## 🔧 Instalación
 
+**Soporte de plataforma:** Actualmente solo hay instalador para Linux. La versión para Windows está planificada para una próxima actualización.
+
 Los scripts automatizados instalan todas las dependencias necesarias en el proyecto, incluso si ya están instaladas en el sistema.
 
 ### 🐧 Linux
