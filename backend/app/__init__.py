@@ -21,12 +21,17 @@ def create_app():
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
     
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    db_uri_path = db_path.replace('\\', '/')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_uri_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Log de la ruta de la base de datos (solo en desarrollo o si hay error)
     if not getattr(sys, 'frozen', False):
-        print(f"📁 Base de datos: {db_path}")
+        try:
+            print(f"📁 Base de datos: {db_path}")
+        except UnicodeEncodeError:
+            # Fallback para Windows con codificación limitada
+            print(f"Base de datos: {db_path}")
     
     # Inicializar base de datos
     db.init_app(app)
@@ -111,4 +116,3 @@ def create_app():
             return redirect(url_for('main.index'))
     
     return app
-

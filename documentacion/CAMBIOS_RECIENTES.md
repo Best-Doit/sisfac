@@ -1,7 +1,7 @@
 # Cambios Recientes y Mejoras - SISFAC
 
-**Última actualización**: Enero 2025  
-**Versión**: 1.3
+**Última actualización**: Febrero 2026  
+**Versión**: 5.6.0
 
 Este documento describe los cambios, mejoras y nuevas funcionalidades implementadas recientemente en el sistema SISFAC.
 
@@ -352,4 +352,3 @@ Mejora en el sistema de generación automática de números de factura desde tal
 - [Flujos Funcionales](./guia_desarrollo/flujos.md)
 - [PRD - Requisitos del Producto](./PRD_SISFAC.md)
 - [Arquitectura Técnica](./ARQUITECTURA_TECNICA.md)
-

@@ -110,6 +110,8 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=None)
 # ============================================
 # CONFIGURACIÓN EXE --ONEFILE OPTIMIZADA
 # ============================================
+is_windows = sys.platform.startswith('win')
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -119,8 +121,8 @@ exe = EXE(
     name='sisfac-backend',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,  # Stripear símbolos para reducir tamaño
-    upx=True,    # Comprimir con UPX si está disponible
+    strip=not is_windows,  # En Windows no hay strip
+    upx=not is_windows,    # Evitar UPX en Windows salvo que se instale explícitamente
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,  # Mantener consola para logs en producción
@@ -131,4 +133,5 @@ exe = EXE(
     entitlements_file=None,
     # Optimizaciones adicionales
     icon=None,  # Sin icono (no necesario para backend)
+    # En Windows, el nombre del ejecutable será sisfac-backend.exe automáticamente
 )

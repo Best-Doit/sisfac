@@ -25,6 +25,30 @@ Este script:
 2. Empaqueta todo con Electron
 3. Genera `electron/dist/SISFAC-1.0.0.AppImage`
 
+---
+
+## 🪟 Empaquetado para Windows (Instalador .exe)
+
+### Usando el Script Automatizado (Recomendado)
+
+En **PowerShell**:
+
+```powershell
+.\empaquetar.ps1
+```
+
+En **CMD**:
+
+```cmd
+empaquetar.bat
+```
+
+Este script:
+1. Verifica/instala dependencias del backend
+2. Compila el backend con PyInstaller (genera `backend/dist/sisfac-backend.exe`)
+3. Verifica recursos de Windows (icono `.ico` y `installer.nsh`)
+4. Empaqueta con Electron (genera instalador `.exe` en `electron/dist/`)
+
 ### Empaquetado Manual
 
 ```bash
@@ -46,6 +70,7 @@ npm run dist
 - ✅ Node.js y npm
 - ✅ PyInstaller instalado: `pip install pyinstaller`
 - ✅ electron-builder instalado: `npm install` (en `electron/`)
+- ✅ Para Windows: `npx` disponible (incluido con npm)
 
 ---
 
@@ -143,4 +168,3 @@ chmod +x electron/dist/SISFAC-1.0.0.AppImage
 - [Empaquetado Seguro - Protección de Datos](./EMPAQUETADO_SEGURO.md) - Detalles sobre protección de datos
 - [Arquitectura Técnica](./ARQUITECTURA_TECNICA.md) - Estructura del sistema
 - [Guía de Desarrollo](./guia_desarrollo/README.md) - Desarrollo y contribución
-

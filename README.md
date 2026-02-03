@@ -15,14 +15,57 @@ Construido con Flask, Tailwind CSS, Alpine.js y Electron.
 
 ## 📋 Requisitos
 
-- Python 3.9+ (recomendado: 3.12)
+- Python 3.9+ (recomendado: 3.12+)
 - Node.js y npm (para empaquetado)
 
 ## 🔧 Instalación
 
-**Soporte de plataforma:** Actualmente solo hay instalador para Linux. La versión para Windows está planificada para una próxima actualización.
-
 Los scripts automatizados instalan todas las dependencias necesarias en el proyecto, incluso si ya están instaladas en el sistema.
+
+## ⬇️ Descargas
+
+Los instaladores oficiales se publican en la sección **Releases** del repositorio:
+
+https://github.com/Best-Doit/sisfac/releases
+
+### 🪟 Windows
+
+**Iniciar aplicación:**
+
+En **CMD (Símbolo del sistema):**
+```cmd
+start.bat
+```
+
+En **PowerShell:**
+```powershell
+.\start.ps1
+```
+O si prefieres usar el .bat:
+```powershell
+.\start.bat
+```
+
+Este script:
+- ✅ Crea el entorno virtual (`venv`) si no existe
+- ✅ Instala todas las dependencias de Python
+- ✅ Inicia el servidor Flask en `http://localhost:5000`
+
+**Empaquetar instalador .exe:**
+
+En **PowerShell:**
+```powershell
+.\empaquetar.ps1
+```
+
+En **CMD:**
+```cmd
+empaquetar.bat
+```
+
+Requisitos para empaquetar en Windows:
+- ✅ Python 3.9+ (con venv)
+- ✅ Node.js + npm (incluye `npx`)
 
 ### 🐧 Linux
 
@@ -47,6 +90,14 @@ Este script instala y configura automáticamente:
 ```
 
 ## 📦 Scripts Disponibles
+
+### Windows
+
+**Scripts de uso:**
+- `start.bat` - Script para CMD (Símbolo del sistema)
+- `start.ps1` - Script para PowerShell (recomendado)
+  
+Ambos scripts crean venv (si no existe), instalan dependencias e inician la aplicación
 
 ### Linux
 

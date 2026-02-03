@@ -39,10 +39,10 @@ Este documento describe la estructura del backend, los módulos principales y su
 ### 2.2. `Producto`
 - Tabla: `productos`
 - Campos principales:
-  - `id`, `codigo` (único), `nombre`, `descripcion`
+  - `id`, `codigo` (único), `nombre`
   - `precio_unitario` (precio principal)
-  - `precio_1`, `precio_2`, `precio_3` (niveles de precio opcionales)
-  - `stock`, `categoria`, `fecha_registro`, `activo`
+  - `precio_1`, `precio_2` (niveles de precio opcionales)
+  - `stock`, `fecha_registro`, `activo`
 - Métodos:
   - `to_dict()`: para APIs/autocompletado.
   - `obtener_precio(nivel=1)`: devuelve el precio según nivel 1/2/3 o el principal.
@@ -190,4 +190,3 @@ Funciones principales:
 ## 4. Flujos Técnicos Clave
 
 Los flujos detallados (crear factura, importar productos, gestionar stock, etc.) están desarrollados con más detalle en `flujos.md`.
-

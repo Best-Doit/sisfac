@@ -30,6 +30,7 @@ def index():
     # Total facturado del mes
     total_facturado_mes = sum(f.total for f in facturas_mes)
     total_facturado_mes_anterior = sum(f.total for f in facturas_mes_anterior)
+    it_mes = total_facturado_mes * 0.03
     
     # Total facturado general
     total_facturado_general = db.session.query(func.sum(Factura.total)).filter(
@@ -50,6 +51,11 @@ def index():
         Producto.activo == True
     ).order_by(Producto.stock.asc()).limit(5).all()
     
+    meses_es = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ]
+
     stats = {
         'total_clientes': Cliente.query.filter_by(activo=True).count(),
         'total_productos': Producto.query.filter_by(activo=True).count(),
@@ -59,10 +65,11 @@ def index():
         'productos_stock_bajo': Producto.query.filter(Producto.stock < umbral_stock, Producto.activo == True).count(),
         'total_facturado_mes': total_facturado_mes,
         'total_facturado_mes_anterior': total_facturado_mes_anterior,
+        'it_mes': it_mes,
+        'nombre_mes': meses_es[hoy.month - 1],
         'total_facturado_general': total_facturado_general,
         'facturas_mes': len(facturas_mes),
         'ultimas_facturas': ultimas_facturas,
         'productos_stock_bajo_lista': productos_stock_bajo
     }
     return render_template('index.html', stats=stats)
-

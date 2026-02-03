@@ -361,6 +361,5 @@ ls -la squashfs-root/resources/backend/
 
 ---
 
-**Última actualización:** 2025-01-XX
-**Versión del build:** 1.0.0
-
+**Última actualización:** 2026-02-03
+**Versión del build:** 5.6.0

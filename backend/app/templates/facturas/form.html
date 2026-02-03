@@ -3,18 +3,18 @@
 {% block title %}Registrar Factura - SISFAC{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Registrar Factura Física</h2>
+<div class="max-w-7xl mx-auto px-2 sm:px-0">
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Registrar Factura Física</h2>
     
-    <form method="POST" x-data="facturaForm({
+    <form method="POST" class="min-h-0" x-data="facturaForm({
         numeroFactura: '{{ numero_factura_sugerido or '' }}',
         talonarioId: '{{ talonario_seleccionado_id or '' }}',
         clienteId: '{{ cliente_seleccionado_id or '' }}'
     })">
         <!-- Paso 1: Información de la Factura -->
-        <div x-show="paso === 1" class="space-y-4">
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-xl font-bold mb-4 text-gray-800">Información de la Factura</h3>
+        <div x-show="paso === 1" class="space-y-3 sm:space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 sm:overflow-visible sm:max-h-none">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-bold mb-3 text-gray-800">Información de la Factura</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Número de Factura *</label>
@@ -47,33 +47,12 @@
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Fecha Emisión *</label>
                         <input type="date" name="fecha_emision" required x-model="fechaEmision"
                                class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
                     </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Fecha Vencimiento</label>
-                        <input type="date" name="fecha_vencimiento" x-model="fechaVencimiento"
-                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">IVA (%)</label>
-                        <input type="number" step="0.01" name="iva" value="0" x-model="iva"
-                               class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label class="flex items-center">
-                        <input type="checkbox" name="actualizar_stock" x-model="actualizarStock" class="mr-2">
-                        <span class="text-sm text-gray-700">Actualizar stock al guardar</span>
-                    </label>
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Notas</label>
-                    <textarea name="notas" rows="2" x-model="notas"
-                              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
                 </div>
             </div>
             
@@ -86,10 +65,10 @@
         </div>
 
         <!-- Paso 2: Selección de Productos (Carrito) -->
-        <div x-show="paso === 2" class="space-y-4">
-            <div class="bg-white rounded-lg shadow p-6">
+        <div x-show="paso === 2" class="space-y-3 sm:space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 sm:overflow-visible sm:max-h-none">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-gray-800">Seleccionar Productos (Ordenados por Stock)</h3>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800">Seleccionar Productos (Ordenados por Stock)</h3>
                     <button type="button" @click="paso = 1" 
                             class="text-gray-600 hover:text-gray-800">← Volver</button>
                 </div>
@@ -153,8 +132,8 @@
             </div>
             
             <!-- Carrito -->
-            <div class="bg-white rounded-lg shadow p-6" x-show="carrito.length > 0">
-                <h3 class="text-xl font-bold mb-4 text-gray-800">Productos Seleccionados (<span x-text="carrito.length"></span>)</h3>
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6" x-show="carrito.length > 0">
+                <h3 class="text-lg sm:text-xl font-bold mb-3 text-gray-800">Productos Seleccionados (<span x-text="carrito.length"></span>)</h3>
                 <div class="space-y-2">
                     <template x-for="(item, index) in carrito" :key="index">
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
@@ -186,10 +165,10 @@
         </div>
 
         <!-- Paso 3: Tabla Tipo Factura Manual -->
-        <div x-show="paso === 3" class="space-y-4">
-            <div class="bg-white rounded-lg shadow p-6">
+        <div x-show="paso === 3" class="space-y-3 sm:space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 sm:overflow-visible sm:max-h-none">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-gray-800">Tabla de Factura</h3>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800">Tabla de Factura</h3>
                     <button type="button" @click="paso = 2" 
                             class="text-gray-600 hover:text-gray-800">← Volver a Selección</button>
                 </div>
@@ -272,11 +251,6 @@
                                 <td class="border border-gray-300 px-3 py-2 font-bold" 
                                     x-text="`Bs. ${subtotal.toFixed(2)}`"></td>
                             </tr>
-                            <tr>
-                                <td colspan="8" class="border border-gray-300 px-3 py-2 text-right font-bold">IVA:</td>
-                                <td class="border border-gray-300 px-3 py-2 font-bold" 
-                                    x-text="`Bs. ${ivaMonto.toFixed(2)}`"></td>
-                            </tr>
                             <tr class="bg-purple-100">
                                 <td colspan="8" class="border border-gray-300 px-3 py-2 text-right font-bold text-lg">TOTAL:</td>
                                 <td class="border border-gray-300 px-3 py-2 font-bold text-lg text-purple-600" 
@@ -310,10 +284,6 @@ function facturaForm(initial = {}) {
         talonarioId: initial.talonarioId || '',
         clienteId: initial.clienteId || '',
         fechaEmision: '',
-        fechaVencimiento: '',
-        iva: 0,
-        actualizarStock: false,
-        notas: '',
         busqueda: '',
         carrito: [],
         tablaFactura: [],
@@ -430,12 +400,8 @@ function facturaForm(initial = {}) {
             return this.tablaFactura.reduce((sum, item) => sum + (parseFloat(item.subtotal) || 0), 0);
         },
         
-        get ivaMonto() {
-            return this.subtotal * (parseFloat(this.iva) || 0) / 100;
-        },
-        
         get total() {
-            return this.subtotal + this.ivaMonto;
+            return this.subtotal;
         },
         
     }

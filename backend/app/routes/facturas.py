@@ -121,11 +121,14 @@ def api_clientes():
 def facturar():
     try:
         if request.method == 'POST':
-            # Convertir fecha_emision a date object
-            fecha_emision = datetime.strptime(request.form['fecha_emision'], '%Y-%m-%d').date()
-            # Crear copia mutable del form para modificar fecha_emision
+            # Convertir fecha_emision a date object si viene en el form
             form_data = request.form.copy()
-            form_data['fecha_emision'] = fecha_emision
+            fecha_raw = request.form.get('fecha_emision')
+            if fecha_raw:
+                try:
+                    form_data['fecha_emision'] = datetime.strptime(fecha_raw, '%Y-%m-%d').date()
+                except ValueError:
+                    form_data['fecha_emision'] = None
             
             # Crear un objeto similar a request.form pero con fecha convertida
             class FormData:
@@ -147,11 +150,25 @@ def facturar():
             if error:
                 flash(error, 'error')
                 datos = FacturacionService.obtener_datos_formulario(con_numeros_sugeridos=True)
-                return render_template('facturas/facturar.html', 
+                # Mantener cliente/talonario/numero para no perder selección al re-render
+                cliente_rand = random.choice(datos['clientes']).id if datos['clientes'] else None
+                talonario_def = datos['talonarios'][0] if datos['talonarios'] else None
+                talonario_sel_id = None
+                numero_sug = ''
+                if talonario_def and 'talonarios_data' in datos:
+                    for td in datos['talonarios_data']:
+                        if td['id'] == talonario_def.id:
+                            talonario_sel_id = td['id']
+                            numero_sug = td.get('numero_sugerido', '') or ''
+                            break
+                return render_template('facturas/facturar.html',
                                      productos=datos['productos'],
                                      clientes=datos['clientes'],
                                      talonarios=datos['talonarios'],
-                                     talonarios_data=datos.get('talonarios_data', []))
+                                     talonarios_data=datos.get('talonarios_data', []),
+                                     cliente_seleccionado_id=cliente_rand,
+                                     talonario_seleccionado_id=talonario_sel_id,
+                                     numero_factura_sugerido=numero_sug)
             
             flash('Factura registrada correctamente', 'success')
             return redirect(url_for('facturas.detalle', id=factura.id))

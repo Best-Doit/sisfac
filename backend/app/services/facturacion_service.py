@@ -21,9 +21,21 @@ class FacturacionService:
             tuple: (factura, error_message)
         """
         try:
-            cliente_id = int(request_form['cliente_id'])
+            # Validar cliente obligatorio
+            cliente_val = request_form.get('cliente_id', '').strip()
+            if not cliente_val:
+                return None, 'Debe seleccionar un cliente.'
+            try:
+                cliente_id = int(cliente_val)
+            except (ValueError, TypeError):
+                return None, 'Cliente no válido.'
+            if not Cliente.query.get(cliente_id):
+                return None, 'El cliente seleccionado no existe.'
+            
             numero_factura = request_form.get('numero_factura', '').strip()
-            fecha_emision = request_form['fecha_emision']
+            fecha_emision = request_form.get('fecha_emision')
+            if not fecha_emision:
+                return None, 'Debe indicar la fecha de emisión.'
             talonario_id = request_form.get('talonario_id')
             
             # Convertir talonario_id
@@ -81,9 +93,10 @@ class FacturacionService:
                     continue
                 
                 # Validar stock solo si se va a actualizar
-                if actualizar_stock and producto.stock < cantidad:
+                stock_actual = producto.stock if producto.stock is not None else 0
+                if actualizar_stock and stock_actual < cantidad:
                     db.session.rollback()
-                    return None, f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}'
+                    return None, f'Stock insuficiente para {producto.nombre}. Disponible: {stock_actual}'
                 
                 # Crear detalle
                 detalle = DetalleFactura(
@@ -98,7 +111,12 @@ class FacturacionService:
                 
                 # Actualizar stock
                 if actualizar_stock:
-                    producto.stock -= cantidad
+                    producto.stock = stock_actual - cantidad
+            
+            # Debe haber al menos una línea de detalle
+            if subtotal == 0:
+                db.session.rollback()
+                return None, 'Debe agregar al menos un producto a la factura.'
             
             # Calcular totales
             iva_monto = subtotal * 0  # IVA siempre en 0

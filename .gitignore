@@ -89,7 +89,15 @@ yarn-error.log*
 # Electron build outputs
 electron/dist/
 electron/build/
+!electron/build/
+!electron/build/*.js
+!electron/build/*.sh
+!electron/build/*.nsh
+!electron/build/*.png
+!electron/build/*.ico
 electron/node_modules/
+builder-effective-config.yaml
+electron/dist/builder-effective-config.yaml
 *.AppImage
 *.dmg
 *.exe
@@ -233,4 +241,3 @@ tailwind.output.css
 # ============================================
 # *.desktop - MANTENER (archivos de lanzador son parte del proyecto)
 # electron/SISFAC.desktop - MANTENER
-

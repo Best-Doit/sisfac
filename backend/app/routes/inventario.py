@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_file
 from app import db
+from app.config import get_uploads_dir
 from app.models import Producto
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -8,6 +9,9 @@ import os
 import uuid
 
 bp = Blueprint('inventario', __name__)
+
+def _is_xhr():
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
 @bp.route('/')
 def listar():
@@ -22,51 +26,62 @@ def listar():
 @bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo():
     if request.method == 'POST':
-        precio_1 = float(request.form['precio_1'])
-        precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
-        
-        # Validar que P1 sea mayor o igual que P2
-        if precio_2 and precio_2 > precio_1:
-            flash('El Precio 2 no puede ser mayor que el Precio 1. P1 debe ser el precio más alto.', 'error')
-            return render_template('inventario/form.html')
-        
-        # precio_unitario será igual a precio_1 (para compatibilidad)
-        producto = Producto(
-            codigo=request.form['codigo'],
-            nombre=request.form['nombre'],
-            descripcion=request.form.get('descripcion', ''),
-            precio_unitario=precio_1,  # Mantener para compatibilidad, pero igual a precio_1
-            precio_1=precio_1,
-            precio_2=precio_2,
-            stock=int(request.form.get('stock', 0))
-        )
-        db.session.add(producto)
-        db.session.commit()
-        flash('Producto creado correctamente', 'success')
-        return redirect(url_for('inventario.listar'))
+        try:
+            precio_1 = float(request.form['precio_1'])
+            precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
+            if precio_2 and precio_2 > precio_1:
+                msg = 'El Precio 2 no puede ser mayor que el Precio 1.'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
+                return render_template('inventario/form.html')
+            producto = Producto(
+                codigo=request.form['codigo'].strip(),
+                nombre=request.form['nombre'].strip(),
+                precio_unitario=precio_1,
+                precio_1=precio_1,
+                precio_2=precio_2,
+                stock=int(request.form.get('stock', 0))
+            )
+            db.session.add(producto)
+            db.session.commit()
+            if _is_xhr():
+                return jsonify({'success': True, 'message': 'Producto creado correctamente'})
+            flash('Producto creado correctamente', 'success')
+            return redirect(url_for('inventario.listar'))
+        except Exception as e:
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
+            raise
     return render_template('inventario/form.html')
 
 @bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 def editar(id):
     producto = Producto.query.get_or_404(id)
     if request.method == 'POST':
-        precio_1 = float(request.form['precio_1'])
-        precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
-        
-        # Validar que P1 sea mayor o igual que P2
-        if precio_2 and precio_2 > precio_1:
-            flash('El Precio 2 no puede ser mayor que el Precio 1. P1 debe ser el precio más alto.', 'error')
-            return render_template('inventario/form.html', producto=producto)
-        
-        producto.nombre = request.form['nombre']
-        producto.descripcion = request.form.get('descripcion', '')
-        producto.precio_unitario = precio_1  # Mantener para compatibilidad
-        producto.precio_1 = precio_1
-        producto.precio_2 = precio_2
-        producto.stock = int(request.form.get('stock', 0))
-        db.session.commit()
-        flash('Producto actualizado correctamente', 'success')
-        return redirect(url_for('inventario.listar'))
+        try:
+            precio_1 = float(request.form['precio_1'])
+            precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
+            if precio_2 and precio_2 > precio_1:
+                msg = 'El Precio 2 no puede ser mayor que el Precio 1.'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
+                return render_template('inventario/form.html', producto=producto)
+            producto.nombre = request.form['nombre'].strip()
+            producto.precio_unitario = precio_1
+            producto.precio_1 = precio_1
+            producto.precio_2 = precio_2
+            producto.stock = int(request.form.get('stock', 0))
+            db.session.commit()
+            if _is_xhr():
+                return jsonify({'success': True, 'message': 'Producto actualizado correctamente'})
+            flash('Producto actualizado correctamente', 'success')
+            return redirect(url_for('inventario.listar'))
+        except Exception as e:
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
+            raise
     return render_template('inventario/form.html', producto=producto)
 
 @bp.route('/<int:id>/eliminar', methods=['POST'])
@@ -112,14 +127,16 @@ def importar():
             return redirect(url_for('inventario.importar'))
         
         if not archivo.filename.endswith(('.xlsx', '.xls')):
-            flash('El archivo debe ser Excel (.xlsx o .xls)', 'error')
+            msg = 'El archivo debe ser Excel (.xlsx o .xls)'
+            if _is_xhr():
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, 'error')
             return redirect(url_for('inventario.importar'))
         
         # Guardar archivo temporalmente
         filename = secure_filename(archivo.filename)
         temp_filename = f"{uuid.uuid4()}_{filename}"
-        upload_folder = os.path.join(os.path.dirname(__file__), '..', '..', 'uploads')
-        os.makedirs(upload_folder, exist_ok=True)
+        upload_folder = get_uploads_dir()
         filepath = os.path.join(upload_folder, temp_filename)
         archivo.save(filepath)
         
@@ -137,80 +154,35 @@ def importar():
                     break
             
             if not header_row:
-                flash('No se encontraron encabezados válidos en el archivo Excel', 'error')
+                msg = 'No se encontraron encabezados. Use la plantilla con: Nombre, Código, Precio_1, Precio_2, Stock'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
                 os.remove(filepath)
                 return redirect(url_for('inventario.importar'))
             
-            # Mapear columnas
-            headers = [str(cell.value).strip() if cell.value else '' for cell in ws[header_row]]
+            # Columnas según plantilla: Nombre, Código, Precio_1, Precio_2, Stock (normalizar acentos y espacios)
+            def norm(s):
+                if s is None:
+                    return ''
+                return (str(s).strip().lower()
+                        .replace('ó', 'o').replace('í', 'i').replace('é', 'e').replace('á', 'a').replace('ú', 'u')
+                        .replace(' ', '_'))
+            headers = [norm(cell.value) for cell in ws[header_row]]
+            col_map = {'nombre': 'nombre', 'codigo': 'codigo', 'precio_1': 'precio_1', 'precio_2': 'precio_2', 'stock': 'stock'}
             col_indices = {}
-            
-            # Buscar columnas por diferentes nombres posibles
-            # Nota: El orden importa - primero buscar nombres más específicos
-            for idx, header in enumerate(headers):
-                if not header:
+            for idx, h in enumerate(headers):
+                if not h:
                     continue
-                header_lower = str(header).lower().strip()
-                
-                # Nombre de producto (más específico primero)
-                if 'nombre' in header_lower and 'producto' in header_lower:
-                    if 'nombre' not in col_indices:
-                        col_indices['nombre'] = idx
-                elif 'nombre' in header_lower or 'producto' in header_lower:
-                    if 'nombre' not in col_indices:
-                        col_indices['nombre'] = idx
-                # Código
-                elif 'codigo' in header_lower or 'código' in header_lower:
-                    if 'codigo' not in col_indices:
-                        col_indices['codigo'] = idx
-                # Precio de compra
-                elif 'precio de compra' in header_lower or 'precio compra' in header_lower:
-                    if 'precio_compra' not in col_indices:
-                        col_indices['precio_compra'] = idx
-                # Precio de Venta 1 (más específico primero)
-                elif ('precio' in header_lower and 'venta' in header_lower and '1' in header_lower) or \
-                     'precio de venta 1' in header_lower or 'precio venta 1' in header_lower or \
-                     'p1' in header_lower or 'precio 1' in header_lower:
-                    if 'precio_1' not in col_indices:
-                        col_indices['precio_1'] = idx
-                # Precio de Venta 2 (más específico primero)
-                elif ('precio' in header_lower and 'venta' in header_lower and '2' in header_lower) or \
-                     'precio de venta 2' in header_lower or 'precio venta 2' in header_lower or \
-                     'p2' in header_lower or 'precio 2' in header_lower:
-                    if 'precio_2' not in col_indices:
-                        col_indices['precio_2'] = idx
-                # Precio unitario (solo si no se asignó precio_1 o precio_2)
-                elif ('precio unitario' in header_lower or 'precio_unitario' in header_lower) and \
-                     'precio_1' not in col_indices and 'precio_2' not in col_indices:
-                    if 'precio' not in col_indices:
-                        col_indices['precio'] = idx
-                # Precio genérico (solo si no hay otros precios asignados)
-                elif 'precio' in header_lower and 'precio_1' not in col_indices and 'precio_2' not in col_indices:
-                    if 'precio' not in col_indices:
-                        col_indices['precio'] = idx
-                # Saldo para facturar (tiene prioridad sobre Cantidad)
-                elif 'saldo para facturar' in header_lower or ('saldo' in header_lower and 'facturar' in header_lower):
-                    col_indices['stock'] = idx  # Siempre sobrescribir si existe
-                # Cantidad facturada
-                elif 'cantidad facturada' in header_lower:
-                    if 'cantidad_facturada' not in col_indices:
-                        col_indices['cantidad_facturada'] = idx
-                # Stock (genérico)
-                elif 'stock' in header_lower:
-                    if 'stock' not in col_indices:
-                        col_indices['stock'] = idx
-                # Cantidad (solo si no se asignó stock - tiene menor prioridad)
-                elif 'cantidad' in header_lower and 'facturada' not in header_lower:
-                    if 'stock' not in col_indices:
-                        col_indices['stock'] = idx
-                # Descripción
-                elif 'descripcion' in header_lower or 'descripción' in header_lower:
-                    if 'descripcion' not in col_indices:
-                        col_indices['descripcion'] = idx
+                key = col_map.get(h, h)
+                if key in col_map and key not in col_indices:
+                    col_indices[key] = idx
             
             if 'nombre' not in col_indices:
-                headers_encontrados = [h for h in headers if h]
-                flash(f'No se encontró la columna "Nombre" o "Producto" en el archivo. Columnas encontradas: {", ".join(headers_encontrados) if headers_encontrados else "ninguna"}', 'error')
+                msg = 'Falta la columna "Nombre". Descargue la plantilla y no cambie los nombres de las columnas.'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
                 os.remove(filepath)
                 return redirect(url_for('inventario.importar'))
             
@@ -227,7 +199,6 @@ def importar():
                 precio_1 = None
                 precio_2 = None
                 stock = 0
-                descripcion = ''
                 
                 try:
                     if 'nombre' in col_indices:
@@ -241,14 +212,7 @@ def importar():
                         codigo_cell = row[col_indices['codigo']]
                         codigo = str(codigo_cell.value).strip() if codigo_cell.value else None
                     
-                    if 'precio' in col_indices:
-                        precio_cell = row[col_indices['precio']]
-                        try:
-                            precio = float(precio_cell.value) if precio_cell.value else 0
-                        except (ValueError, TypeError):
-                            precio = 0
-                    
-                    # Leer precio_1 si existe la columna
+                    precio = 0
                     if 'precio_1' in col_indices:
                         precio_1_cell = row[col_indices['precio_1']]
                         try:
@@ -271,17 +235,13 @@ def importar():
                         except (ValueError, TypeError):
                             stock = 0
                     
-                    if 'descripcion' in col_indices:
-                        desc_cell = row[col_indices['descripcion']]
-                        descripcion = str(desc_cell.value).strip() if desc_cell.value else ''
-                    
                     # Generar código si no existe
                     if not codigo:
                         codigo = f"PROD-{uuid.uuid4().hex[:8].upper()}"
                     
                     # Validar que P1 sea mayor o igual que P2
                     if precio_1 and precio_2 and precio_2 > precio_1:
-                        errores.append(f"Fila {row_num}: El Precio 2 no puede ser mayor que el Precio 1. P1 debe ser el precio más alto.")
+                        errores.append(f"Fila {row_idx}: El Precio 2 no puede ser mayor que el Precio 1. P1 debe ser el precio más alto.")
                         continue
                     
                     # Asegurar que precio_1 tenga un valor (es obligatorio)
@@ -290,7 +250,7 @@ def importar():
                         if precio and precio > 0:
                             precio_1 = precio
                         else:
-                            errores.append(f"Fila {row_num}: El Precio 1 es obligatorio.")
+                            errores.append(f"Fila {row_idx}: El Precio 1 es obligatorio.")
                             continue
                     
                     # precio_unitario será igual a precio_1 (para compatibilidad)
@@ -311,15 +271,12 @@ def importar():
                         producto_existente.precio_1 = precio_1
                         producto_existente.precio_2 = precio_2
                         producto_existente.stock = stock
-                        if descripcion:
-                            producto_existente.descripcion = descripcion
                         productos_actualizados += 1
                     else:
                         # Crear nuevo producto
                         nuevo_producto = Producto(
                             codigo=codigo,
                             nombre=nombre,
-                            descripcion=descripcion,
                             precio_unitario=precio_1,  # Compatibilidad, igual a precio_1
                             precio_1=precio_1,
                             precio_2=precio_2 if precio_2 else None,
@@ -338,19 +295,25 @@ def importar():
             # Eliminar archivo temporal
             os.remove(filepath)
             
-            # Mensaje de resultado
-            mensaje = f"Importación completada: {productos_creados} productos creados, {productos_actualizados} productos actualizados"
+            mensaje = f"Importación completada: {productos_creados} creados, {productos_actualizados} actualizados"
             if errores:
-                mensaje += f". {len(errores)} errores encontrados."
+                mensaje += f". {len(errores)} errores."
+            if _is_xhr():
+                return jsonify({'success': True, 'message': mensaje})
+            if errores:
                 flash(mensaje, 'warning')
             else:
                 flash(mensaje, 'success')
-            
             return redirect(url_for('inventario.listar'))
         
         except Exception as e:
-            if os.path.exists(filepath):
-                os.remove(filepath)
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except NameError:
+                pass
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
             flash(f'Error al procesar el archivo: {str(e)}', 'error')
             return redirect(url_for('inventario.importar'))
     
@@ -358,54 +321,38 @@ def importar():
 
 @bp.route('/descargar-plantilla')
 def descargar_plantilla():
-    """Genera y descarga la plantilla Excel para importar productos"""
-    # Crear workbook
+    """Plantilla Excel con columnas: Nombre, Código, Precio_1, Precio_2, Stock"""
     wb = Workbook()
     ws = wb.active
-    ws.title = 'Plantilla Importación'
-    
-    # Estilos para encabezados
+    ws.title = 'Productos'
     header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
     header_font = Font(bold=True, color='FFFFFF', size=11)
     center_align = Alignment(horizontal='center', vertical='center')
-    
-    # Encabezados
-    headers = ['Nombre de Producto', 'Cantidad', 'Precio de Compra', 'Precio de Venta 1', 'Precio de Venta 2', 'Saldo para Facturar', 'Cantidad Facturada']
+    # Nombres exactos que el sistema lee (no cambiar)
+    headers = ['Nombre', 'Código', 'Precio_1', 'Precio_2', 'Stock']
     ws.append(headers)
-    
-    # Aplicar estilos a encabezados
     for col_idx, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_idx)
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = center_align
-    
-    # Datos de ejemplo
     ejemplos = [
-        ['Producto Ejemplo 1', 100, 50.00, 75.00, 80.00, 100, 0],
-        ['Producto Ejemplo 2', 50, 30.00, 45.00, 50.00, 50, 0],
-        ['Producto Ejemplo 3', 200, 25.00, 40.00, 45.00, 200, 0],
+        ['Producto 1', 'PROD-001', 75.00, 65.00, 100],
+        ['Producto 2', 'PROD-002', 45.00, 40.00, 50],
     ]
-    
     for fila in ejemplos:
         ws.append(fila)
-    
-    # Ajustar ancho de columnas
-    column_widths = [25, 12, 15, 15, 15, 18, 18]
-    for col_idx, width in enumerate(column_widths, 1):
+    for col_idx, width in enumerate([25, 14, 12, 12, 10], 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
-    
-    # Guardar en memoria
     from io import BytesIO
     output = BytesIO()
     wb.save(output)
     output.seek(0)
-    
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='plantilla_importacion_productos.xlsx'
+        download_name='plantilla_productos.xlsx'
     )
 
 @bp.route('/exportar')
@@ -434,7 +381,6 @@ def exportar():
     headers = [
         'Código',
         'Nombre',
-        'Descripción',
         'Precio 1',
         'Precio 2',
         'Stock',
@@ -453,14 +399,14 @@ def exportar():
         ws.append([
             producto.codigo,
             producto.nombre,
-            producto.descripcion or '',
             producto.precio_1 or producto.precio_unitario or 0,
             producto.precio_2 if producto.precio_2 is not None else '',
-            producto.stock
+            producto.stock,
+            producto.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if producto.fecha_registro else ''
         ])
     
     # Ajustar ancho de columnas
-    column_widths = [18, 30, 40, 16, 12, 12, 12, 10, 18, 16]
+    column_widths = [18, 30, 14, 12, 10, 18]
     for col_idx, width in enumerate(column_widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
     

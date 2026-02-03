@@ -2,8 +2,8 @@
 
 ## Documento de Arquitectura del Sistema
 
-**Versión:** 1.0  
-**Fecha:** 2024  
+**Versión:** 5.6.0  
+**Fecha:** Febrero 2026  
 **Autor:** Equipo de Desarrollo
 
 ---
@@ -785,4 +785,3 @@ Usuario    Frontend    Flask/FastAPI    Service    DAL    Database
 ---
 
 **Fin del Documento de Arquitectura Técnica**
-

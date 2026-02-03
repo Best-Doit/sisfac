@@ -160,8 +160,8 @@ Garantías de seguridad:
 
 ## 🔄 Versión de Documentación
 
-- **Versión Actual**: 1.3
-- **Fecha**: Enero 2025
+- **Versión Actual**: 5.6.0
+- **Fecha**: Febrero 2026
 - **Estado**: En Desarrollo Activo
 
 ---
@@ -198,4 +198,3 @@ Para preguntas sobre la documentación o el proyecto, contactar al equipo de des
 ---
 
 **Última actualización**: 2024
-

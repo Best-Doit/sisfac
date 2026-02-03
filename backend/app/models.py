@@ -33,7 +33,6 @@ class Producto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), unique=True, nullable=False)
     nombre = db.Column(db.String(200), nullable=False)
-    descripcion = db.Column(db.Text)
     precio_unitario = db.Column(db.Float, nullable=False)
     precio_1 = db.Column(db.Float)
     precio_2 = db.Column(db.Float)
@@ -49,7 +48,6 @@ class Producto(db.Model):
             'id': self.id,
             'codigo': self.codigo,
             'nombre': self.nombre,
-            'descripcion': self.descripcion,
             'precio_unitario': self.precio_unitario,
             'precio_1': self.precio_1,
             'precio_2': self.precio_2,
@@ -133,14 +131,24 @@ class Talonario(db.Model):
     prefijo = db.Column(db.String(20), nullable=False)
     numero_inicio = db.Column(db.Integer, nullable=False)
     numero_fin = db.Column(db.Integer, nullable=False)
-    numero_actual = db.Column(db.Integer, nullable=False)
+    numero_actual = db.Column(db.Integer, nullable=False, default=0)
     activo = db.Column(db.Boolean, default=True)
+    
+    def _get_numeros_safe(self):
+        """Normaliza valores nulos para evitar errores en comparaciones."""
+        numero_inicio = self.numero_inicio if self.numero_inicio is not None else 1
+        numero_fin = self.numero_fin if self.numero_fin is not None else numero_inicio
+        numero_actual = self.numero_actual if self.numero_actual is not None else numero_inicio
+        if numero_actual < numero_inicio:
+            numero_actual = numero_inicio
+        return numero_inicio, numero_actual, numero_fin
     
     def obtener_siguiente_numero(self):
         """Obtiene el siguiente número de factura e incrementa el contador"""
-        if self.numero_actual < self.numero_fin:
-            numero = f"{self.prefijo}-{self.numero_actual:04d}"
-            self.numero_actual += 1
+        _, numero_actual, numero_fin = self._get_numeros_safe()
+        if numero_actual < numero_fin:
+            numero = f"{self.prefijo}-{numero_actual:04d}"
+            self.numero_actual = numero_actual + 1
             db.session.add(self)
             db.session.commit()
             return numero
@@ -148,8 +156,9 @@ class Talonario(db.Model):
     
     def sugerir_siguiente_numero(self):
         """Sugiere el siguiente número sin incrementarlo (solo para mostrar)"""
-        if self.numero_actual < self.numero_fin:
-            return f"{self.prefijo}-{self.numero_actual:04d}"
+        _, numero_actual, numero_fin = self._get_numeros_safe()
+        if numero_actual < numero_fin:
+            return f"{self.prefijo}-{numero_actual:04d}"
         return None
 
 class Configuracion(db.Model):

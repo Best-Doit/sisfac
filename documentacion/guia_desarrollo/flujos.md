@@ -159,7 +159,7 @@ Este documento describe los principales flujos funcionales del sistema SISFAC y 
      - **Tabla de Factura** (optimizada para pantalla completa):
        - Ocupa todo el espacio disponible sin scroll en la pantalla principal.
        - Solo la tabla tiene scroll interno cuando hay muchos productos.
-       - Columnas: Código, Descripción, Cantidad, Precio, Subtotal, Stock
+       - Columnas: Código, Nombre, Cantidad, Precio, Subtotal, Stock
        - **Control de Cantidad**:
          - Botones `−` (izquierda) y `+` (derecha) alrededor del input.
          - Input de tipo number sin flechitas (spinners ocultos con CSS).
@@ -327,4 +327,3 @@ Estos mecanismos permiten al usuario tener feedback visual claro y confirman acc
   - Endpoints API: `/clientes/api/buscar`, `/facturas/api/buscar`.
   - Frontend: Alpine.js con `@input`, `@focus`, `@blur` para mostrar/ocultar sugerencias.
   - Dropdown de sugerencias con z-index alto y posicionamiento absoluto.
-

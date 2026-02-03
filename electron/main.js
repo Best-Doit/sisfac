@@ -6,6 +6,7 @@ const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const http = require('http');
+const net = require('net');
 
 // Deshabilitar sandbox para evitar problemas de permisos
 // IMPORTANTE: Debe ejecutarse ANTES de que app esté listo
@@ -16,8 +17,44 @@ app.commandLine.appendSwitch('--disable-zygote');
 let mainWindow = null;
 let backendProcess = null;
 let appIsQuitting = false;
+let backendPort = null;
 
-function startBackend() {
+if (process.platform === 'win32') {
+  // Asegura icono correcto en barra de tareas y notificaciones
+  app.setAppUserModelId('com.sisfac.desktop');
+}
+
+function getAppIconPath() {
+  const isWindows = process.platform === 'win32';
+  const isLinux = process.platform === 'linux';
+  const iconName = isWindows ? 'icon.ico' : 'icon.png';
+
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, iconName);
+  }
+
+  if (isWindows) {
+    return path.join(__dirname, 'build', 'icon.ico');
+  }
+  if (isLinux) {
+    return path.join(__dirname, 'build', 'icon.png');
+  }
+  return undefined;
+}
+
+function getAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+function startBackend(port) {
   const fs = require('fs');
   
   // Detectar si estamos en modo desarrollo o empaquetado
@@ -29,7 +66,11 @@ function startBackend() {
     // Modo empaquetado: usar el ejecutable de PyInstaller
     // El ejecutable está en extraResources/backend/
     const resourcesPath = process.resourcesPath;
-    backendExecutable = path.join(resourcesPath, 'backend', 'sisfac-backend');
+    const isWindows = process.platform === 'win32';
+    
+    // En Windows el ejecutable es .exe, en Linux no tiene extensión
+    const executableName = isWindows ? 'sisfac-backend.exe' : 'sisfac-backend';
+    backendExecutable = path.join(resourcesPath, 'backend', executableName);
     projectRoot = resourcesPath;
     
     // Verificar que el ejecutable existe
@@ -37,21 +78,25 @@ function startBackend() {
       dialog.showErrorBox('Error Crítico', 
         `No se encontró el ejecutable del backend.\n\n` +
         `Buscado en: ${backendExecutable}\n\n` +
-        `El AppImage está corrupto o incompleto.\n` +
+        `La aplicación está corrupta o incompleta.\n` +
         `Por favor, reinstale la aplicación.`
       );
       app.quit();
       return;
     }
     
-    // Los permisos se establecen en postinst.sh durante la instalación
-    // No intentar chmod aquí porque requiere permisos root
+    // En Linux, los permisos se establecen en postinst.sh durante la instalación
+    // En Windows no es necesario
   } else {
     // Modo desarrollo: usar Python del venv
     projectRoot = path.join(__dirname, '..');
     const backendScript = path.join(projectRoot, 'backend', 'run.py');
-    const venvPython = path.join(projectRoot, 'venv', 'bin', 'python');
-    const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python3';
+    // Detectar sistema operativo para usar la ruta correcta del venv
+    const isWindows = process.platform === 'win32';
+    const venvPython = isWindows 
+      ? path.join(projectRoot, 'venv', 'Scripts', 'python.exe')
+      : path.join(projectRoot, 'venv', 'bin', 'python');
+    const pythonCmd = fs.existsSync(venvPython) ? venvPython : (isWindows ? 'python' : 'python3');
     
     if (!fs.existsSync(backendScript)) {
       dialog.showErrorBox('Error', 
@@ -67,7 +112,8 @@ function startBackend() {
       env: {
         ...process.env,
         FLASK_ENV: 'development',
-        FLASK_DEBUG: '1'
+        FLASK_DEBUG: '1',
+        SISFAC_PORT: String(port)
       },
       stdio: 'inherit'
     });
@@ -97,6 +143,7 @@ function startBackend() {
       ...process.env,
       FLASK_ENV: 'production',
       FLASK_DEBUG: '0',
+      SISFAC_PORT: String(port),
       PYTHONUNBUFFERED: '1'  // Para logs en tiempo real
     },
     stdio: 'pipe'  // Cambiar a 'pipe' para capturar logs si es necesario
@@ -136,9 +183,11 @@ function startBackend() {
 }
 
 function createWindow() {
+  const iconPath = getAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -147,68 +196,86 @@ function createWindow() {
   });
 
   // Cargar la app Flask
-  mainWindow.loadURL('http://127.0.0.1:5000/');
+  mainWindow.loadURL(`http://127.0.0.1:${backendPort}/`);
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 }
 
-app.whenReady().then(() => {
-  startBackend();
+const gotTheLock = app.requestSingleInstanceLock();
 
-  // Esperar a que arranque Flask y luego abrir la ventana
-  // Intentar conectar hasta 10 veces (10 segundos máximo)
-  let attempts = 0;
-  const maxAttempts = 10;
-  
-  const tryConnect = () => {
-    const req = http.get('http://127.0.0.1:5000/', (res) => {
-      if (res.statusCode === 200 || res.statusCode === 302) {
-        createWindow();
-      } else {
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.focus();
+    } else {
+      createWindow();
+    }
+  });
+
+  app.whenReady().then(async () => {
+    backendPort = await getAvailablePort();
+    startBackend(backendPort);
+
+    // Esperar a que arranque Flask y luego abrir la ventana
+    // Intentar conectar hasta 10 veces (10 segundos máximo)
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const tryConnect = () => {
+      const req = http.get(`http://127.0.0.1:${backendPort}/`, (res) => {
+        if (res.statusCode === 200 || res.statusCode === 302) {
+          createWindow();
+        } else {
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(tryConnect, 1000);
+          } else {
+            dialog.showErrorBox('Error', 
+              'No se pudo conectar al servidor Flask.\n\n' +
+              'Por favor, verifica que el backend se inició correctamente.'
+            );
+          }
+        }
+      });
+      
+      req.on('error', () => {
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(tryConnect, 1000);
         } else {
           dialog.showErrorBox('Error', 
-            'No se pudo conectar al servidor Flask.\n\n' +
-            'Por favor, verifica que el backend se inició correctamente.'
+            'No se pudo iniciar el servidor Flask.\n\n' +
+            'El backend no respondió después de varios intentos.'
           );
         }
-      }
-    });
+      });
+      
+      req.setTimeout(500, () => {
+        req.destroy();
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(tryConnect, 1000);
+        }
+      });
+    };
     
-    req.on('error', () => {
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(tryConnect, 1000);
-      } else {
-        dialog.showErrorBox('Error', 
-          'No se pudo iniciar el servidor Flask.\n\n' +
-          'El backend no respondió después de varios intentos.'
-        );
-      }
-    });
-    
-    req.setTimeout(500, () => {
-      req.destroy();
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(tryConnect, 1000);
-      }
-    });
-  };
-  
-  // Iniciar intentos de conexión después de 1 segundo
-  setTimeout(tryConnect, 1000);
+    // Iniciar intentos de conexión después de 1 segundo
+    setTimeout(tryConnect, 1000);
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
   });
-});
+}
 
 app.on('window-all-closed', () => {
   app.quit();

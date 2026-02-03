@@ -5,122 +5,76 @@ from app.config import get_database_path, get_backups_dir
 from sqlalchemy import text, func
 import os
 import shutil
-from datetime import datetime, timedelta
-from openpyxl import Workbook
+from datetime import datetime, date, timedelta
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
 bp = Blueprint('ajustes', __name__)
 
+
+def _get_backups_list():
+    """Lista de backups para usar en modales."""
+    backups = []
+    try:
+        backups_dir = get_backups_dir()
+        if os.path.exists(backups_dir):
+            for file in os.listdir(backups_dir):
+                if file.endswith('.db'):
+                    file_path = os.path.join(backups_dir, file)
+                    backups.append({
+                        'nombre': file,
+                        'fecha': datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%d/%m/%Y %H:%M:%S'),
+                        'tamaño': os.path.getsize(file_path)
+                    })
+            backups.sort(key=lambda x: x['fecha'], reverse=True)
+    except Exception:
+        pass
+    return backups
+
+
 @bp.route('/')
 def index():
-    """Pantalla principal de ajustes"""
-    try:
-        db_path = get_database_path()
-        db_size = 0
-        if os.path.exists(db_path):
-            db_size = os.path.getsize(db_path)
-        
-        # Listar backups disponibles
-        backups_dir = get_backups_dir()
-        backups = []
-        try:
-            if os.path.exists(backups_dir):
-                for file in os.listdir(backups_dir):
-                    if file.endswith('.db'):
-                        file_path = os.path.join(backups_dir, file)
-                        backups.append({
-                            'nombre': file,
-                            'fecha': datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%d/%m/%Y %H:%M:%S'),
-                            'tamaño': os.path.getsize(file_path)
-                        })
-                backups.sort(key=lambda x: x['fecha'], reverse=True)
-        except Exception as e:
-            print(f"⚠️ Error al listar backups: {e}")
-            backups = []
-        
-        # Obtener configuraciones
-        try:
-            umbral_stock = Configuracion.obtener_int('umbral_stock_bajo', 10)
-        except Exception as e:
-            print(f"⚠️ Error al obtener configuración: {e}")
-            umbral_stock = 10
-        
-        # Estadísticas del sistema
-        stats = {
-            'total_clientes': 0,
-            'total_productos': 0,
-            'total_facturas': 0,
-            'facturas_pagadas': 0,
-            'facturas_anuladas': 0,
-            'total_facturado': 0,
-            'productos_stock_bajo': 0
-        }
-        
-        try:
-            stats['total_clientes'] = Cliente.query.filter_by(activo=True).count()
-        except Exception as e:
-            print(f"⚠️ Error al contar clientes: {e}")
-        
-        try:
-            stats['total_productos'] = Producto.query.filter_by(activo=True).count()
-        except Exception as e:
-            print(f"⚠️ Error al contar productos: {e}")
-        
-        try:
-            stats['total_facturas'] = Factura.query.count()
-        except Exception as e:
-            print(f"⚠️ Error al contar facturas: {e}")
-        
-        try:
-            stats['facturas_pagadas'] = Factura.query.filter_by(estado='PAGADA').count()
-        except Exception as e:
-            print(f"⚠️ Error al contar facturas pagadas: {e}")
-        
-        try:
-            stats['facturas_anuladas'] = Factura.query.filter_by(estado='ANULADA').count()
-        except Exception as e:
-            print(f"⚠️ Error al contar facturas anuladas: {e}")
-        
-        try:
-            stats['total_facturado'] = db.session.query(func.sum(Factura.total)).filter(
-                Factura.estado == 'PAGADA'
-            ).scalar() or 0
-        except Exception as e:
-            print(f"⚠️ Error al calcular total facturado: {e}")
-        
-        try:
-            stats['productos_stock_bajo'] = Producto.query.filter(
-                Producto.stock < umbral_stock,
-                Producto.activo == True
-            ).count()
-        except Exception as e:
-            print(f"⚠️ Error al contar productos con stock bajo: {e}")
-        
-        return render_template('ajustes/index.html', 
-                             db_size=db_size, 
-                             backups=backups,
-                             umbral_stock=umbral_stock,
-                             stats=stats)
-    except Exception as e:
-        import traceback
-        error_msg = f"Error en ajustes.index: {str(e)}"
-        print(f"❌ {error_msg}")
-        traceback.print_exc()
-        flash(f'Error al cargar la página de ajustes: {str(e)}', 'error')
-        # Intentar mostrar la página con valores por defecto
-        return render_template('ajustes/index.html', 
-                             db_size=0, 
-                             backups=[],
-                             umbral_stock=10,
-                             stats={
-                                 'total_clientes': 0,
-                                 'total_productos': 0,
-                                 'total_facturas': 0,
-                                 'facturas_pagadas': 0,
-                                 'facturas_anuladas': 0,
-                                 'total_facturado': 0,
-                                 'productos_stock_bajo': 0
-                             })
+    """Pantalla principal de ajustes: solo botones que abren modales."""
+    return render_template('ajustes/index.html')
+
+
+@bp.route('/modal/configuracion')
+def modal_configuracion():
+    """Fragmento HTML para modal de configuración (umbral stock)."""
+    umbral_stock = Configuracion.obtener_int('umbral_stock_bajo', 10)
+    return render_template('ajustes/modales/configuracion.html', umbral_stock=umbral_stock)
+
+
+@bp.route('/modal/backup')
+def modal_backup():
+    """Fragmento HTML para modal de copias de seguridad."""
+    backups = _get_backups_list()
+    return render_template('ajustes/modales/backup.html', backups=backups)
+
+
+@bp.route('/modal/restaurar')
+def modal_restaurar():
+    """Fragmento HTML para modal de restaurar backup."""
+    return render_template('ajustes/modales/restaurar.html')
+
+
+@bp.route('/modal/exportar')
+def modal_exportar():
+    """Fragmento HTML para modal de exportar a Excel."""
+    return render_template('ajustes/modales/exportar.html')
+
+
+@bp.route('/modal/importar')
+def modal_importar():
+    """Fragmento HTML para modal de importar datos desde Excel."""
+    return render_template('ajustes/modales/importar.html')
+
+
+@bp.route('/modal/borrar-datos')
+def modal_borrar_datos():
+    """Fragmento HTML para modal de zona peligrosa."""
+    return render_template('ajustes/modales/borrar_datos.html')
+
 
 @bp.route('/backup', methods=['POST'])
 def crear_backup():
@@ -351,9 +305,9 @@ def exportar_datos():
         # Hoja de Clientes
         ws_clientes = wb.active
         ws_clientes.title = "Clientes"
-        headers = ['ID', 'Nombre', 'CI/RUC', 'Dirección', 'Teléfono', 'Email', 'Fecha Registro']
+        headers = ['ID', 'Nombre', 'CI/RUC', 'Dirección', 'Teléfono', 'Email', 'Activo', 'Fecha Registro']
         ws_clientes.append(headers)
-        for cliente in Cliente.query.filter_by(activo=True).all():
+        for cliente in Cliente.query.all():
             ws_clientes.append([
                 cliente.id,
                 cliente.nombre,
@@ -361,23 +315,24 @@ def exportar_datos():
                 cliente.direccion or '',
                 cliente.telefono or '',
                 cliente.email or '',
+                'Sí' if cliente.activo else 'No',
                 cliente.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if cliente.fecha_registro else ''
             ])
         
         # Hoja de Productos
         ws_productos = wb.create_sheet("Productos")
-        headers = ['ID', 'Código', 'Nombre', 'Descripción', 'Precio Principal', 'Precio P1', 'Precio P2', 'Stock', 'Fecha Registro']
+        headers = ['ID', 'Código', 'Nombre', 'Precio Principal', 'Precio P1', 'Precio P2', 'Stock', 'Activo', 'Fecha Registro']
         ws_productos.append(headers)
-        for producto in Producto.query.filter_by(activo=True).all():
+        for producto in Producto.query.all():
             ws_productos.append([
                 producto.id,
                 producto.codigo,
                 producto.nombre,
-                producto.descripcion or '',
                 producto.precio_unitario,
                 producto.precio_1 or '',
                 producto.precio_2 or '',
                 producto.stock,
+                'Sí' if producto.activo else 'No',
                 producto.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if producto.fecha_registro else ''
             ])
         
@@ -394,6 +349,19 @@ def exportar_datos():
                 talonario.numero_fin,
                 talonario.numero_actual,
                 'Sí' if talonario.activo else 'No'
+            ])
+
+        # Hoja de Configuración
+        ws_config = wb.create_sheet("Configuracion")
+        headers = ['ID', 'Clave', 'Valor', 'Descripción', 'Fecha Actualización']
+        ws_config.append(headers)
+        for config in Configuracion.query.all():
+            ws_config.append([
+                config.id,
+                config.clave,
+                config.valor or '',
+                config.descripcion or '',
+                config.fecha_actualizacion.strftime('%d/%m/%Y %H:%M:%S') if config.fecha_actualizacion else ''
             ])
         
         # Hoja de Facturas
@@ -465,6 +433,360 @@ def exportar_datos():
     except Exception as e:
         flash(f'Error al exportar datos: {str(e)}', 'error')
         return redirect(url_for('ajustes.index'))
+
+
+@bp.route('/importar-datos', methods=['POST'])
+def importar_datos():
+    """Importar todos los datos desde un Excel exportado por el sistema"""
+    try:
+        if 'archivo' not in request.files:
+            flash('No se seleccionó ningún archivo', 'error')
+            return redirect(url_for('ajustes.index'))
+        
+        archivo = request.files['archivo']
+        if archivo.filename == '':
+            flash('No se seleccionó ningún archivo', 'error')
+            return redirect(url_for('ajustes.index'))
+        
+        if not archivo.filename.endswith(('.xlsx', '.xls')):
+            flash('El archivo debe ser Excel (.xlsx o .xls)', 'error')
+            return redirect(url_for('ajustes.index'))
+        
+        wb = load_workbook(archivo, data_only=True)
+        required_sheets = ['Clientes', 'Productos', 'Talonarios', 'Facturas', 'DetallesFactura']
+        faltantes = [s for s in required_sheets if s not in wb.sheetnames]
+        if faltantes:
+            flash(f'Faltan hojas requeridas en el Excel: {", ".join(faltantes)}', 'error')
+            return redirect(url_for('ajustes.index'))
+        
+        def _norm(value):
+            if value is None:
+                return ''
+            s = str(value).strip().lower()
+            s = (s.replace('á', 'a').replace('é', 'e').replace('í', 'i')
+                  .replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n'))
+            s = s.replace('/', '_').replace(' ', '_')
+            return s
+        
+        def _parse_int(value, default=None):
+            if value in (None, ''):
+                return default
+            try:
+                return int(float(value))
+            except Exception:
+                return default
+        
+        def _parse_float(value, default=None):
+            if value in (None, ''):
+                return default
+            try:
+                return float(value)
+            except Exception:
+                return default
+        
+        def _parse_bool(value, default=True):
+            if value is None or value == '':
+                return default
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, (int, float)):
+                return value != 0
+            s = str(value).strip().lower()
+            if s in ('si', 'sí', 'true', '1', 'yes', 'y'):
+                return True
+            if s in ('no', 'false', '0', 'n'):
+                return False
+            return default
+        
+        def _parse_date(value):
+            if value in (None, ''):
+                return None
+            if isinstance(value, datetime):
+                return value.date()
+            if isinstance(value, date):
+                return value
+            s = str(value).strip()
+            for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
+                try:
+                    return datetime.strptime(s, fmt).date()
+                except Exception:
+                    pass
+            return None
+        
+        def _parse_datetime(value):
+            if value in (None, ''):
+                return None
+            if isinstance(value, datetime):
+                return value
+            if isinstance(value, date):
+                return datetime.combine(value, datetime.min.time())
+            s = str(value).strip()
+            for fmt in ('%d/%m/%Y %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%Y-%m-%d'):
+                try:
+                    return datetime.strptime(s, fmt)
+                except Exception:
+                    pass
+            return None
+        
+        def _leer_filas(sheet, mapping):
+            headers = [_norm(c.value) for c in sheet[1]]
+            idx_map = {h: i for i, h in enumerate(headers) if h}
+            filas = []
+            for row in sheet.iter_rows(min_row=2):
+                data = {}
+                empty = True
+                for col_key, field in mapping.items():
+                    idx = idx_map.get(col_key)
+                    if idx is None:
+                        continue
+                    value = row[idx].value
+                    if value not in (None, ''):
+                        empty = False
+                    if field:
+                        data[field] = value
+                if not empty:
+                    filas.append(data)
+            return filas
+        
+        clientes_map = {
+            'id': 'id',
+            'nombre': 'nombre',
+            'ci_ruc': 'ruc_ci',
+            'ci': 'ruc_ci',
+            'ruc': 'ruc_ci',
+            'direccion': 'direccion',
+            'telefono': 'telefono',
+            'email': 'email',
+            'activo': 'activo',
+            'fecha_registro': 'fecha_registro'
+        }
+        productos_map = {
+            'id': 'id',
+            'codigo': 'codigo',
+            'nombre': 'nombre',
+            'precio_principal': 'precio_principal',
+            'precio_unitario': 'precio_principal',
+            'precio_1': 'precio_1',
+            'precio_2': 'precio_2',
+            'stock': 'stock',
+            'activo': 'activo',
+            'fecha_registro': 'fecha_registro'
+        }
+        talonarios_map = {
+            'id': 'id',
+            'nombre': 'nombre',
+            'prefijo': 'prefijo',
+            'numero_inicio': 'numero_inicio',
+            'numero_fin': 'numero_fin',
+            'numero_actual': 'numero_actual',
+            'activo': 'activo'
+        }
+        facturas_map = {
+            'id': 'id',
+            'numero_factura': 'numero_factura',
+            'cliente_id': 'cliente_id',
+            'talonario_id': 'talonario_id',
+            'fecha_emision': 'fecha_emision',
+            'fecha_vencimiento': 'fecha_vencimiento',
+            'fecha_creacion': 'fecha_creacion',
+            'fecha_edicion': 'fecha_edicion',
+            'subtotal': 'subtotal',
+            'iva': 'iva',
+            'total': 'total',
+            'estado': 'estado',
+            'notas': 'notas'
+        }
+        detalles_map = {
+            'id': 'id',
+            'factura_id': 'factura_id',
+            'producto_id': 'producto_id',
+            'cantidad': 'cantidad',
+            'precio_unitario': 'precio_unitario',
+            'subtotal': 'subtotal'
+        }
+        config_map = {
+            'id': 'id',
+            'clave': 'clave',
+            'valor': 'valor',
+            'descripcion': 'descripcion',
+            'fecha_actualizacion': 'fecha_actualizacion'
+        }
+        
+        errores = []
+        
+        # Deshabilitar foreign keys y limpiar tablas
+        db.session.execute(text('PRAGMA foreign_keys = OFF'))
+        db.session.query(DetalleFactura).delete(synchronize_session=False)
+        db.session.query(Factura).delete(synchronize_session=False)
+        db.session.query(Producto).delete(synchronize_session=False)
+        db.session.query(Cliente).delete(synchronize_session=False)
+        db.session.query(Talonario).delete(synchronize_session=False)
+        db.session.query(Configuracion).delete(synchronize_session=False)
+        
+        # Importar Clientes
+        for row in _leer_filas(wb['Clientes'], clientes_map):
+            nombre = str(row.get('nombre') or '').strip()
+            if not nombre:
+                continue
+            cliente = Cliente(
+                nombre=nombre,
+                ruc_ci=str(row.get('ruc_ci') or '').strip(),
+                direccion=str(row.get('direccion') or '').strip(),
+                telefono=str(row.get('telefono') or '').strip(),
+                email=str(row.get('email') or '').strip()
+            )
+            row_id = _parse_int(row.get('id'))
+            if row_id is not None:
+                cliente.id = row_id
+            fecha_registro = _parse_datetime(row.get('fecha_registro'))
+            if fecha_registro:
+                cliente.fecha_registro = fecha_registro
+            cliente.activo = _parse_bool(row.get('activo'), True)
+            db.session.add(cliente)
+        
+        # Importar Productos
+        for row in _leer_filas(wb['Productos'], productos_map):
+            codigo = str(row.get('codigo') or '').strip()
+            nombre = str(row.get('nombre') or '').strip()
+            if not codigo or not nombre:
+                errores.append('Productos: falta Código o Nombre en una fila')
+                continue
+            precio_principal = _parse_float(row.get('precio_principal'))
+            precio_1 = _parse_float(row.get('precio_1'))
+            precio_2 = _parse_float(row.get('precio_2'))
+            precio_unitario = precio_principal if precio_principal is not None else (precio_1 if precio_1 is not None else 0.0)
+            producto = Producto(
+                codigo=codigo,
+                nombre=nombre,
+                precio_unitario=precio_unitario,
+                precio_1=precio_1,
+                precio_2=precio_2,
+                stock=_parse_int(row.get('stock'), 0)
+            )
+            row_id = _parse_int(row.get('id'))
+            if row_id is not None:
+                producto.id = row_id
+            fecha_registro = _parse_datetime(row.get('fecha_registro'))
+            if fecha_registro:
+                producto.fecha_registro = fecha_registro
+            producto.activo = _parse_bool(row.get('activo'), True)
+            db.session.add(producto)
+        
+        # Importar Talonarios
+        for row in _leer_filas(wb['Talonarios'], talonarios_map):
+            nombre = str(row.get('nombre') or '').strip()
+            prefijo = str(row.get('prefijo') or '').strip()
+            if not nombre or not prefijo:
+                errores.append('Talonarios: falta Nombre o Prefijo en una fila')
+                continue
+            numero_inicio = _parse_int(row.get('numero_inicio'), 1)
+            numero_fin = _parse_int(row.get('numero_fin'), numero_inicio)
+            numero_actual = _parse_int(row.get('numero_actual'), numero_inicio)
+            talonario = Talonario(
+                nombre=nombre,
+                prefijo=prefijo,
+                numero_inicio=numero_inicio,
+                numero_fin=numero_fin,
+                numero_actual=numero_actual,
+                activo=_parse_bool(row.get('activo'), True)
+            )
+            row_id = _parse_int(row.get('id'))
+            if row_id is not None:
+                talonario.id = row_id
+            db.session.add(talonario)
+        
+        # Importar Facturas
+        for row in _leer_filas(wb['Facturas'], facturas_map):
+            numero_factura = str(row.get('numero_factura') or '').strip()
+            cliente_id = _parse_int(row.get('cliente_id'))
+            fecha_emision = _parse_date(row.get('fecha_emision'))
+            if not numero_factura or cliente_id is None or fecha_emision is None:
+                errores.append('Facturas: falta Número, Cliente o Fecha Emisión en una fila')
+                continue
+            factura = Factura(
+                numero_factura=numero_factura,
+                cliente_id=cliente_id,
+                talonario_id=_parse_int(row.get('talonario_id')),
+                fecha_emision=fecha_emision,
+                fecha_vencimiento=_parse_date(row.get('fecha_vencimiento')),
+                subtotal=_parse_float(row.get('subtotal'), 0.0) or 0.0,
+                iva=_parse_float(row.get('iva'), 0.0) or 0.0,
+                total=_parse_float(row.get('total'), 0.0) or 0.0,
+                estado=str(row.get('estado') or 'PAGADA'),
+                notas=str(row.get('notas') or '')
+            )
+            row_id = _parse_int(row.get('id'))
+            if row_id is not None:
+                factura.id = row_id
+            fecha_creacion = _parse_datetime(row.get('fecha_creacion'))
+            fecha_edicion = _parse_datetime(row.get('fecha_edicion'))
+            if fecha_creacion:
+                factura.fecha_creacion = fecha_creacion
+            if fecha_edicion:
+                factura.fecha_edicion = fecha_edicion
+            db.session.add(factura)
+        
+        # Importar Detalles de Factura
+        for row in _leer_filas(wb['DetallesFactura'], detalles_map):
+            factura_id = _parse_int(row.get('factura_id'))
+            producto_id = _parse_int(row.get('producto_id'))
+            if factura_id is None or producto_id is None:
+                errores.append('DetallesFactura: falta Factura ID o Producto ID en una fila')
+                continue
+            cantidad = _parse_int(row.get('cantidad'), 0) or 0
+            precio_unitario = _parse_float(row.get('precio_unitario'), 0.0) or 0.0
+            subtotal = _parse_float(row.get('subtotal'), None)
+            if subtotal is None:
+                subtotal = cantidad * precio_unitario
+            detalle = DetalleFactura(
+                factura_id=factura_id,
+                producto_id=producto_id,
+                cantidad=cantidad,
+                precio_unitario=precio_unitario,
+                subtotal=subtotal
+            )
+            row_id = _parse_int(row.get('id'))
+            if row_id is not None:
+                detalle.id = row_id
+            db.session.add(detalle)
+        
+        # Importar Configuración (opcional)
+        if 'Configuracion' in wb.sheetnames:
+            for row in _leer_filas(wb['Configuracion'], config_map):
+                clave = str(row.get('clave') or '').strip()
+                if not clave:
+                    continue
+                config = Configuracion(
+                    clave=clave,
+                    valor=str(row.get('valor') or ''),
+                    descripcion=str(row.get('descripcion') or '')
+                )
+                row_id = _parse_int(row.get('id'))
+                if row_id is not None:
+                    config.id = row_id
+                fecha_actualizacion = _parse_datetime(row.get('fecha_actualizacion'))
+                if fecha_actualizacion:
+                    config.fecha_actualizacion = fecha_actualizacion
+                db.session.add(config)
+        
+        if errores:
+            db.session.rollback()
+            msg = f'Error en la importación: {errores[0]}'
+            flash(msg, 'error')
+            return redirect(url_for('ajustes.index'))
+        
+        db.session.commit()
+        flash('Datos importados correctamente. Reinicia la aplicación para aplicar cambios.', 'success')
+        return redirect(url_for('ajustes.index'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al importar datos: {str(e)}', 'error')
+        return redirect(url_for('ajustes.index'))
+    finally:
+        try:
+            db.session.execute(text('PRAGMA foreign_keys = ON'))
+        except Exception:
+            pass
 
 
 @bp.route('/limpiar-backups', methods=['POST'])

@@ -18,28 +18,45 @@ def listar():
     clientes = clientes.order_by(Cliente.nombre).all()
     return render_template('clientes/list.html', clientes=clientes, q=q)
 
+def _is_xhr():
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
 @bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo():
     if request.method == 'POST':
-        cliente = Cliente(
-            nombre=request.form['nombre'],
-            ruc_ci=request.form.get('ruc_ci', '')
-        )
-        db.session.add(cliente)
-        db.session.commit()
-        flash('Cliente creado correctamente', 'success')
-        return redirect(url_for('clientes.listar'))
+        try:
+            cliente = Cliente(
+                nombre=request.form['nombre'].strip(),
+                ruc_ci=request.form.get('ruc_ci', '').strip()
+            )
+            db.session.add(cliente)
+            db.session.commit()
+            if _is_xhr():
+                return jsonify({'success': True, 'message': 'Cliente creado correctamente'})
+            flash('Cliente creado correctamente', 'success')
+            return redirect(url_for('clientes.listar'))
+        except Exception as e:
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
+            raise
     return render_template('clientes/form.html')
 
 @bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 def editar(id):
     cliente = Cliente.query.get_or_404(id)
     if request.method == 'POST':
-        cliente.nombre = request.form['nombre']
-        cliente.ruc_ci = request.form.get('ruc_ci', '')
-        db.session.commit()
-        flash('Cliente actualizado correctamente', 'success')
-        return redirect(url_for('clientes.listar'))
+        try:
+            cliente.nombre = request.form['nombre'].strip()
+            cliente.ruc_ci = request.form.get('ruc_ci', '').strip()
+            db.session.commit()
+            if _is_xhr():
+                return jsonify({'success': True, 'message': 'Cliente actualizado correctamente'})
+            flash('Cliente actualizado correctamente', 'success')
+            return redirect(url_for('clientes.listar'))
+        except Exception as e:
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
+            raise
     return render_template('clientes/form.html', cliente=cliente)
 
 @bp.route('/<int:id>/eliminar', methods=['POST'])
@@ -73,12 +90,18 @@ def importar():
     """Importar clientes desde Excel"""
     if request.method == 'POST':
         if 'archivo' not in request.files:
-            flash('No se seleccionó ningún archivo', 'error')
+            msg = 'No se seleccionó ningún archivo'
+            if _is_xhr():
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, 'error')
             return redirect(url_for('clientes.importar'))
         
         archivo = request.files['archivo']
         if archivo.filename == '':
-            flash('No se seleccionó ningún archivo', 'error')
+            msg = 'No se seleccionó ningún archivo'
+            if _is_xhr():
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, 'error')
             return redirect(url_for('clientes.importar'))
         
         try:
@@ -95,43 +118,33 @@ def importar():
                     break
             
             if not header_row:
-                flash('No se encontraron encabezados válidos en el archivo Excel', 'error')
+                msg = 'No se encontraron encabezados válidos. Use la plantilla con columnas: Nombre, CI'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
                 return redirect(url_for('clientes.importar'))
             
-            # Leer encabezados
+            # Leer encabezados (plantilla: solo Nombre y CI)
+            def _norm(s):
+                if s is None:
+                    return ''
+                return str(s).strip().lower().replace('ó', 'o').replace('é', 'e').replace('í', 'i')
             headers = [str(cell.value).strip() if cell.value else '' for cell in ws[header_row]]
-            
-            # Buscar índices de columnas (más robusto)
             col_indices = {}
             for idx, header in enumerate(headers):
                 if not header:
                     continue
-                header_lower = str(header).lower().strip()
-                
-                # Nombre (más específico primero)
-                if 'nombre' in header_lower:
-                    if 'nombre' not in col_indices:
-                        col_indices['nombre'] = idx
-                # Cédula de Identidad (más específico primero)
-                elif ('cédula' in header_lower or 'cedula' in header_lower) and 'identidad' in header_lower:
-                    if 'ci' not in col_indices:
-                        col_indices['ci'] = idx
-                # CI o Cédula
-                elif 'cedula' in header_lower or 'cédula' in header_lower or header_lower == 'ci':
-                    if 'ci' not in col_indices:
-                        col_indices['ci'] = idx
-                # RUC/CI
-                elif 'ruc' in header_lower and 'ci' in header_lower:
-                    if 'ci' not in col_indices:
-                        col_indices['ci'] = idx
-                # RUC
-                elif header_lower == 'ruc':
-                    if 'ci' not in col_indices:
-                        col_indices['ci'] = idx
+                h = _norm(header)
+                if h == 'nombre':
+                    col_indices['nombre'] = idx
+                elif h in ('ci', 'cedula', 'ruc'):
+                    col_indices['ci'] = idx
             
             if 'nombre' not in col_indices:
-                headers_encontrados = [h for h in headers if h]
-                flash(f'No se encontró la columna "Nombre" en el archivo. Columnas encontradas: {", ".join(headers_encontrados) if headers_encontrados else "ninguna"}', 'error')
+                msg = 'Falta la columna "Nombre". Descargue la plantilla y no cambie los nombres de las columnas.'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
                 return redirect(url_for('clientes.importar'))
             
             # Procesar filas
@@ -140,50 +153,32 @@ def importar():
             errores = []
             
             for row_idx, row in enumerate(ws.iter_rows(min_row=header_row + 1), header_row + 1):
-                # Obtener valores de las celdas
                 nombre = None
                 ci = None
-                
                 try:
-                    # Leer nombre
                     if 'nombre' in col_indices:
-                        nombre_cell = row[col_indices['nombre']]
-                        nombre = str(nombre_cell.value).strip() if nombre_cell.value else None
-                    
-                    # Validar que haya nombre
-                    if not nombre or nombre.lower() in ['', 'none', 'null']:
+                        v = row[col_indices['nombre']].value
+                        nombre = str(v).strip() if v is not None else None
+                    if not nombre or str(nombre).lower() in ('', 'none', 'null'):
                         continue
-                    
-                    # Leer CI
                     if 'ci' in col_indices:
-                        ci_cell = row[col_indices['ci']]
-                        ci = str(ci_cell.value).strip() if ci_cell.value else None
-                        # Limpiar CI (quitar espacios, guiones, etc.)
+                        v = row[col_indices['ci']].value
+                        ci = str(v).strip() if v is not None else None
                         if ci:
                             ci = ci.replace('-', '').replace(' ', '').strip()
-                            if ci.lower() in ['none', 'null', '']:
+                            if ci.lower() in ('none', 'null', ''):
                                 ci = None
-                
-                    # Buscar si ya existe por nombre o CI
                     cliente_existente = None
                     if ci:
                         cliente_existente = Cliente.query.filter_by(ruc_ci=ci, activo=True).first()
-                    
                     if not cliente_existente:
                         cliente_existente = Cliente.query.filter_by(nombre=nombre, activo=True).first()
-                    
                     if cliente_existente:
-                        # Actualizar
                         cliente_existente.nombre = nombre
-                        if ci:
-                            cliente_existente.ruc_ci = ci
+                        cliente_existente.ruc_ci = ci or ''
                         clientes_actualizados += 1
                     else:
-                        # Crear nuevo
-                        nuevo_cliente = Cliente(
-                            nombre=nombre,
-                            ruc_ci=ci if ci else ''
-                        )
+                        nuevo_cliente = Cliente(nombre=nombre, ruc_ci=ci or '')
                         db.session.add(nuevo_cliente)
                         clientes_importados += 1
                         
@@ -196,12 +191,15 @@ def importar():
             mensaje = f'Importación completada: {clientes_importados} nuevos, {clientes_actualizados} actualizados'
             if errores:
                 mensaje += f'. Errores: {len(errores)}'
+            if _is_xhr():
+                return jsonify({'success': True, 'message': mensaje})
             flash(mensaje, 'success' if not errores else 'warning')
-            
             return redirect(url_for('clientes.listar'))
             
         except Exception as e:
             db.session.rollback()
+            if _is_xhr():
+                return jsonify({'success': False, 'message': str(e)}), 400
             flash(f'Error al importar: {str(e)}', 'error')
             return redirect(url_for('clientes.importar'))
     
@@ -220,7 +218,7 @@ def descargar_plantilla():
     header_font = Font(bold=True, color='FFFFFF', size=11)
     center_align = Alignment(horizontal='center', vertical='center')
     
-    # Encabezados (usar nombres que el código reconozca fácilmente)
+    # Encabezados: solo Nombre y CI (deben coincidir exactamente con la importación)
     headers = ['Nombre', 'CI']
     ws.append(headers)
     

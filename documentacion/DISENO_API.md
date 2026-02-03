@@ -2,8 +2,8 @@
 
 ## Documento de Especificación de APIs
 
-**Versión:** 1.0  
-**Fecha:** 2024  
+**Versión:** 5.6.0  
+**Fecha:** Febrero 2026  
 **Autor:** Equipo de Desarrollo
 
 ---
@@ -450,10 +450,8 @@ GET /api/v1/facturas?estado=PENDIENTE&fecha_desde=2024-01-01
       "id": 1,
       "codigo": "PROD-001",
       "nombre": "Laptop Dell",
-      "descripcion": "Laptop Dell Inspiron 15",
       "precio_unitario": 1500.00,
       "stock": 10,
-      "categoria": "Electrónica",
       "fecha_registro": "2024-01-15T10:30:00",
       "activo": true
     }
@@ -477,20 +475,16 @@ GET /api/v1/facturas?estado=PENDIENTE&fecha_desde=2024-01-01
 {
   "codigo": "PROD-001",
   "nombre": "Laptop Dell",
-  "descripcion": "Laptop Dell Inspiron 15",
   "precio_unitario": 1500.00,
-  "stock": 10,
-  "categoria": "Electrónica"
+  "stock": 10
 }
 ```
 
 **Campos:**
 - `codigo` (string, required): Código único del producto
 - `nombre` (string, required): Nombre del producto
-- `descripcion` (string, optional): Descripción
 - `precio_unitario` (float, required): Precio (debe ser >= 0)
 - `stock` (int, optional): Stock inicial (default: 0, debe ser >= 0)
-- `categoria` (string, optional): Categoría
 
 **Respuesta 201:** Producto creado
 
@@ -936,4 +930,3 @@ FastAPI genera automáticamente documentación OpenAPI (Swagger) en:
 ---
 
 **Fin del Documento de Diseño de API**
-

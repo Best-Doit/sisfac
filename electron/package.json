@@ -1,18 +1,21 @@
 {
   "name": "sisfac-desktop",
-  "version": "1.0.0",
+  "version": "5.6.3",
   "description": "Sistema de Facturación y Gestión de Inventario - AppImage Autónomo",
   "main": "main.js",
   "homepage": "https://github.com/sisfac/sisfac",
   "scripts": {
-    "start": "ELECTRON_DISABLE_SANDBOX=1 electron .",
+    "start": "electron .",
+    "start:dev": "cross-env ELECTRON_DISABLE_SANDBOX=1 electron .",
     "build": "electron-builder --linux",
     "dist": "electron-builder --linux --publish never",
     "dist:deb": "electron-builder --linux deb --publish never",
-    "dist:rpm": "electron-builder --linux rpm --publish never"
+    "dist:rpm": "electron-builder --linux rpm --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:win:portable": "electron-builder --win portable --x64 --publish never"
   },
   "author": {
-    "name": "SISFAC",
+    "name": "New Reboot",
     "email": "sisfac@example.com"
   },
   "license": "MIT",
@@ -48,12 +51,12 @@
     "asarUnpack": [],
     "extraResources": [
       {
-        "from": "../backend/dist/sisfac-backend",
-        "to": "backend/sisfac-backend"
-      },
-      {
         "from": "build/icon.png",
         "to": "icon.png"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
       }
     ],
     "linux": {
@@ -65,6 +68,13 @@
       ],
       "category": "Office",
       "icon": "build/icon.png",
+      "extraResources": [
+        {
+          "from": "../backend/dist/sisfac-backend",
+          "to": "backend/sisfac-backend",
+          "filter": ["**/*"]
+        }
+      ],
       "executableName": "sisfac-desktop",
       "executableArgs": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-zygote"],
       "synopsis": "Sistema de Facturación y Gestión de Inventario",
@@ -85,9 +95,37 @@
     },
     "afterPack": "./build/afterPack.js",
     "afterAllArtifactBuild": "./build/afterAllArtifactBuild.js",
-    "nsis": null,
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SISFAC",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "include": "build/installer.nsh"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "extraResources": [
+        {
+          "from": "../backend/dist/sisfac-backend.exe",
+          "to": "backend/sisfac-backend.exe",
+          "filter": ["**/*"]
+        }
+      ],
+      "publisherName": "New Reboot",
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": true
+    },
     "dmg": null,
-    "mac": null,
-    "win": null
+    "mac": null
   }
 }
