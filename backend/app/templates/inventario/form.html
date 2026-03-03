@@ -24,16 +24,23 @@
                            placeholder="Nombre del producto">
                 </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                    <label class="block text-slate-700 text-xs font-medium mb-1">Precio 1 (Bs.) *</label>
+                    <label class="block text-slate-700 text-xs font-medium mb-1">Precio compra (Bs.) *</label>
+                    <input type="number" step="0.01" min="0" name="precio_compra" 
+                           value="{{ producto.precio_compra if producto else (producto.precio_unitario if producto else '') }}" 
+                           required placeholder="0.00"
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-slate-700 text-xs font-medium mb-1">Precio venta 1 (Bs.) *</label>
                     <input type="number" step="0.01" min="0" name="precio_1" 
                            value="{{ producto.precio_1 if producto and producto.precio_1 else (producto.precio_unitario if producto else '') }}" 
                            required placeholder="0.00"
                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                 </div>
                 <div>
-                    <label class="block text-slate-700 text-xs font-medium mb-1">Precio 2 (Bs.)</label>
+                    <label class="block text-slate-700 text-xs font-medium mb-1">Precio venta 2 (Bs.)</label>
                     <input type="number" step="0.01" min="0" name="precio_2" 
                            value="{{ producto.precio_2 if producto else '' }}" 
                            placeholder="0.00"
@@ -45,7 +52,7 @@
                            class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                 </div>
             </div>
-            <p class="text-[11px] text-slate-500 -mt-1">Precio 1 debe ser mayor o igual que Precio 2.</p>
+            <p class="text-[11px] text-slate-500 -mt-1">Precio venta 1 debe ser mayor o igual que Precio venta 2.</p>
             
             <div class="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
                 <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 text-sm font-medium shadow-sm transition-colors">

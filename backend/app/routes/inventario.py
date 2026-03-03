@@ -27,6 +27,9 @@ def listar():
 def nuevo():
     if request.method == 'POST':
         try:
+            # Precio de compra (obligatorio)
+            precio_compra = float(request.form['precio_compra'])
+            # Precio de venta 1 (obligatorio)
             precio_1 = float(request.form['precio_1'])
             precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
             if precio_2 and precio_2 > precio_1:
@@ -38,7 +41,8 @@ def nuevo():
             producto = Producto(
                 codigo=request.form['codigo'].strip(),
                 nombre=request.form['nombre'].strip(),
-                precio_unitario=precio_1,
+                # Guardamos explícitamente precio de compra; el alias precio_unitario sigue existiendo
+                precio_compra=precio_compra,
                 precio_1=precio_1,
                 precio_2=precio_2,
                 stock=int(request.form.get('stock', 0))
@@ -60,6 +64,9 @@ def editar(id):
     producto = Producto.query.get_or_404(id)
     if request.method == 'POST':
         try:
+            # Precio de compra (obligatorio)
+            precio_compra = float(request.form['precio_compra'])
+            # Precio de venta 1 (obligatorio)
             precio_1 = float(request.form['precio_1'])
             precio_2 = float(request.form.get('precio_2')) if request.form.get('precio_2') else None
             if precio_2 and precio_2 > precio_1:
@@ -69,7 +76,7 @@ def editar(id):
                 flash(msg, 'error')
                 return render_template('inventario/form.html', producto=producto)
             producto.nombre = request.form['nombre'].strip()
-            producto.precio_unitario = precio_1
+            producto.precio_compra = precio_compra
             producto.precio_1 = precio_1
             producto.precio_2 = precio_2
             producto.stock = int(request.form.get('stock', 0))
@@ -154,14 +161,14 @@ def importar():
                     break
             
             if not header_row:
-                msg = 'No se encontraron encabezados. Use la plantilla con: Nombre, Código, Precio_1, Precio_2, Stock'
+                msg = 'No se encontraron encabezados. Use la plantilla con: Nombre, Código, Precio_compra, Precio_1, Precio_2, Stock'
                 if _is_xhr():
                     return jsonify({'success': False, 'message': msg}), 400
                 flash(msg, 'error')
                 os.remove(filepath)
                 return redirect(url_for('inventario.importar'))
             
-            # Columnas según plantilla: Nombre, Código, Precio_1, Precio_2, Stock (normalizar acentos y espacios)
+            # Columnas según plantilla: Nombre, Código, Precio_compra, Precio_1, Precio_2, Stock (normalizar acentos y espacios)
             def norm(s):
                 if s is None:
                     return ''
@@ -169,7 +176,14 @@ def importar():
                         .replace('ó', 'o').replace('í', 'i').replace('é', 'e').replace('á', 'a').replace('ú', 'u')
                         .replace(' ', '_'))
             headers = [norm(cell.value) for cell in ws[header_row]]
-            col_map = {'nombre': 'nombre', 'codigo': 'codigo', 'precio_1': 'precio_1', 'precio_2': 'precio_2', 'stock': 'stock'}
+            col_map = {
+                'nombre': 'nombre',
+                'codigo': 'codigo',
+                'precio_compra': 'precio_compra',
+                'precio_1': 'precio_1',
+                'precio_2': 'precio_2',
+                'stock': 'stock',
+            }
             col_indices = {}
             for idx, h in enumerate(headers):
                 if not h:
@@ -195,7 +209,7 @@ def importar():
                 # Obtener valores
                 nombre = None
                 codigo = None
-                precio = 0
+                precio_compra = None
                 precio_1 = None
                 precio_2 = None
                 stock = 0
@@ -212,7 +226,14 @@ def importar():
                         codigo_cell = row[col_indices['codigo']]
                         codigo = str(codigo_cell.value).strip() if codigo_cell.value else None
                     
-                    precio = 0
+                    # Precio de compra (opcional en archivo, pero lo recomendamos)
+                    if 'precio_compra' in col_indices:
+                        precio_compra_cell = row[col_indices['precio_compra']]
+                        try:
+                            precio_compra = float(precio_compra_cell.value) if precio_compra_cell.value else None
+                        except (ValueError, TypeError):
+                            precio_compra = None
+
                     if 'precio_1' in col_indices:
                         precio_1_cell = row[col_indices['precio_1']]
                         try:
@@ -244,17 +265,18 @@ def importar():
                         errores.append(f"Fila {row_idx}: El Precio 2 no puede ser mayor que el Precio 1. P1 debe ser el precio más alto.")
                         continue
                     
-                    # Asegurar que precio_1 tenga un valor (es obligatorio)
+                    # Asegurar que precio_1 tenga un valor (es obligatorio, precio de venta 1)
                     if not precio_1 or precio_1 == 0:
-                        # Si no hay precio_1, intentar usar precio_unitario como fallback
-                        if precio and precio > 0:
-                            precio_1 = precio
+                        # Si no hay precio_1, intentar usar precio_compra como fallback
+                        if precio_compra and precio_compra > 0:
+                            precio_1 = precio_compra
                         else:
-                            errores.append(f"Fila {row_idx}: El Precio 1 es obligatorio.")
+                            errores.append(f"Fila {row_idx}: El Precio venta 1 es obligatorio.")
                             continue
-                    
-                    # precio_unitario será igual a precio_1 (para compatibilidad)
-                    precio = precio_1
+
+                    # Asegurar que precio_compra tenga valor (si falta, igualarlo a precio_1)
+                    if not precio_compra or precio_compra == 0:
+                        precio_compra = precio_1
                     
                     # Verificar si el producto ya existe (por código o nombre)
                     producto_existente = None
@@ -267,7 +289,7 @@ def importar():
                     if producto_existente:
                         # Actualizar producto existente
                         producto_existente.nombre = nombre
-                        producto_existente.precio_unitario = precio_1  # Compatibilidad
+                        producto_existente.precio_compra = precio_compra
                         producto_existente.precio_1 = precio_1
                         producto_existente.precio_2 = precio_2
                         producto_existente.stock = stock
@@ -277,7 +299,7 @@ def importar():
                         nuevo_producto = Producto(
                             codigo=codigo,
                             nombre=nombre,
-                            precio_unitario=precio_1,  # Compatibilidad, igual a precio_1
+                            precio_compra=precio_compra,
                             precio_1=precio_1,
                             precio_2=precio_2 if precio_2 else None,
                             stock=stock
@@ -321,7 +343,7 @@ def importar():
 
 @bp.route('/descargar-plantilla')
 def descargar_plantilla():
-    """Plantilla Excel con columnas: Nombre, Código, Precio_1, Precio_2, Stock"""
+    """Plantilla Excel con columnas: Nombre, Código, Precio_compra, Precio_1, Precio_2, Stock"""
     wb = Workbook()
     ws = wb.active
     ws.title = 'Productos'
@@ -329,7 +351,7 @@ def descargar_plantilla():
     header_font = Font(bold=True, color='FFFFFF', size=11)
     center_align = Alignment(horizontal='center', vertical='center')
     # Nombres exactos que el sistema lee (no cambiar)
-    headers = ['Nombre', 'Código', 'Precio_1', 'Precio_2', 'Stock']
+    headers = ['Nombre', 'Código', 'Precio_compra', 'Precio_1', 'Precio_2', 'Stock']
     ws.append(headers)
     for col_idx, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_idx)
@@ -337,12 +359,12 @@ def descargar_plantilla():
         cell.font = header_font
         cell.alignment = center_align
     ejemplos = [
-        ['Producto 1', 'PROD-001', 75.00, 65.00, 100],
-        ['Producto 2', 'PROD-002', 45.00, 40.00, 50],
+        ['Producto 1', 'PROD-001', 50.00, 75.00, 65.00, 100],
+        ['Producto 2', 'PROD-002', 30.00, 45.00, 40.00, 50],
     ]
     for fila in ejemplos:
         ws.append(fila)
-    for col_idx, width in enumerate([25, 14, 12, 12, 10], 1):
+    for col_idx, width in enumerate([25, 14, 14, 12, 12, 10], 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
     from io import BytesIO
     output = BytesIO()

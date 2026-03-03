@@ -4,6 +4,43 @@ Servicio de facturación - Lógica de negocio para facturas
 from app import db
 from app.models import Factura, DetalleFactura, Cliente, Producto, Talonario
 
+# region agent log
+import json as _agent_json_fs  # solo para depuración de esta sesión
+import time as _agent_time_fs  # solo para depuración de esta sesión
+import os as _agent_os_fs  # solo para depuración de esta sesión
+
+
+def _agent_debug_log_facturacion(hypothesis_id, message, data):
+    """
+    Log compacto en NDJSON para debug de FacturacionService.
+    No debe usarse fuera de esta sesión de depuración.
+    """
+    try:
+        ts_ms = int(_agent_time_fs.time() * 1000)
+        entry = {
+            "sessionId": "fee812",
+            "id": f"log_{ts_ms}_{hypothesis_id}",
+            "timestamp": ts_ms,
+            "location": "backend/app/services/facturacion_service.py:FacturacionService",
+            "message": message,
+            "data": data,
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+        }
+        # Asegurar que escribimos en la raíz del workspace: debug-fee812.log
+        base_dir = _agent_os_fs.path.abspath(
+            _agent_os_fs.path.join(_agent_os_fs.path.dirname(__file__), "..", "..")
+        )
+        log_path = _agent_os_fs.path.join(base_dir, "debug-fee812.log")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(_agent_json_fs.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        # La depuración nunca debe romper el flujo de la app
+        pass
+
+
+# endregion
+
 
 class FacturacionService:
     """Servicio para manejar la lógica de facturación"""
@@ -47,8 +84,32 @@ class FacturacionService:
             # Si no se envía número de factura, generarlo automáticamente
             if not numero_factura:
                 talonario = Talonario.query.get(talonario_id) if talonario_id else None
+
+                # region agent log
+                _agent_debug_log_facturacion(
+                    "H3",
+                    "generar_numero_factura_en_servicio",
+                    {
+                        "talonario_id": talonario_id,
+                        "numero_factura_inicial": numero_factura,
+                        "talonario_existe": bool(talonario),
+                    },
+                )
+                # endregion
+
                 if talonario:
                     numero_factura = talonario.obtener_siguiente_numero()
+
+                    # region agent log
+                    _agent_debug_log_facturacion(
+                        "H3",
+                        "numero_factura_generado_en_servicio",
+                        {
+                            "talonario_id": talonario_id,
+                            "numero_factura_final": numero_factura,
+                        },
+                    )
+                    # endregion
             
             # Validar que el número de factura exista y no se repita
             if not numero_factura:
