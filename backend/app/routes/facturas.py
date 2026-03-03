@@ -66,7 +66,8 @@ def nueva():
     talonario_por_defecto = datos['talonarios'][0] if datos['talonarios'] else None
     numero_factura_sugerido = None
     if talonario_por_defecto:
-        numero_factura_sugerido = talonario_por_defecto.obtener_siguiente_numero()
+        # Solo sugerimos el número, sin consumirlo aún.
+        numero_factura_sugerido = talonario_por_defecto.sugerir_siguiente_numero()
     
     return render_template(
         'facturas/form.html',
