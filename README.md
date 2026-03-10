@@ -1,93 +1,60 @@
 # SISFAC
 
-Sistema de facturacion para escritorio orientado a pequenos negocios.
+SISFAC es un sistema de facturacion para pequenos negocios.
 
-SISFAC permite:
+Con SISFAC puedes:
 - registrar clientes
-- administrar inventario
-- emitir facturas con numeracion por talonario
+- administrar productos y stock
+- emitir facturas
+- usar talonarios
 - exportar e importar datos por Excel
 - crear y restaurar backups
 
-## Descarga
+## Descargar
 
-Los instaladores oficiales se publican en GitHub Releases:
+Descarga la ultima version desde GitHub Releases:
 
 https://github.com/Best-Doit/sisfac/releases
 
-## Uso Rapido
+## Instalacion
 
 ### Windows
 
-1. Descarga el instalador desde `Releases`.
-2. Instala SISFAC.
-3. Abre la aplicacion desde el acceso directo.
-
-Si estas usando el proyecto en modo desarrollo:
-
-```powershell
-.\start.ps1
-```
-
-O en CMD:
-
-```cmd
-start.bat
-```
+1. Descarga el instalador `.exe`.
+2. Ejecuta el instalador.
+3. Completa la instalacion.
+4. Abre SISFAC desde el escritorio o desde el menu Inicio.
 
 ### Linux
 
-Para desarrollo:
+1. Descarga el archivo disponible en `Releases`.
+2. Instala el paquete correspondiente.
+3. Abre SISFAC desde el menu de aplicaciones.
 
-```bash
-./start.sh
-```
+## Uso Basico
 
-Para empaquetar:
+1. Abre SISFAC.
+2. Registra tus clientes.
+3. Carga tus productos.
+4. Crea un talonario si deseas numeracion automatica.
+5. Emite tus facturas.
+6. Haz backups regularmente.
 
-```bash
-./empaquetar.sh
-```
-
-## Lo Mas Importante
+## Importante
 
 - `P1` es el precio de venta mas alto.
 - `P2` es un precio alternativo mas bajo.
-- La numeracion de facturas puede manejarse por talonario.
-- El sistema puede exportar e importar datos por Excel.
-- Antes de operaciones delicadas, usa backups.
+- Si usas talonarios, la numeracion de facturas se genera en orden.
+- Puedes exportar e importar datos por Excel.
+- Antes de importar o restaurar datos, haz un backup.
 
-## Requisitos Para Desarrollo
+## Soporte
 
-- Python 3.9 o superior
-- Node.js y npm
+Si necesitas ayuda o nuevas versiones:
 
-## Estructura
-
-```text
-SISFAC/
-|-- backend/
-|-- electron/
-|-- documentacion/
-|-- requirements.txt
-|-- start.bat
-|-- start.ps1
-|-- start.sh
-```
-
-## Documentacion
-
-La documentacion tecnica esta en [documentacion/README.md](./documentacion/README.md).
-
-Archivos utiles:
-- [documentacion/CHANGELOG.md](./documentacion/CHANGELOG.md)
-- [documentacion/EMPAQUETADO.md](./documentacion/EMPAQUETADO.md)
-- [documentacion/ARQUITECTURA_TECNICA.md](./documentacion/ARQUITECTURA_TECNICA.md)
+- GitHub Releases: https://github.com/Best-Doit/sisfac/releases
+- TikTok: https://www.tiktok.com/@best_doit
 
 ## Licencia
 
 Uso no comercial.
-
-## Creditos
-
-Desarrollado por Best_Doit.
