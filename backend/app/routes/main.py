@@ -57,7 +57,7 @@ def index():
     ]
 
     stats = {
-        'total_clientes': Cliente.query.filter_by(activo=True).count(),
+        'total_clientes': Cliente.query.count(),
         'total_productos': Producto.query.filter_by(activo=True).count(),
         'total_facturas': Factura.query.count(),
         'facturas_pagadas': Factura.query.filter_by(estado='PAGADA').count(),

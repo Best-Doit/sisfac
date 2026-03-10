@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from app import db
 from app.config import get_uploads_dir
 from app.models import Producto
+from sqlalchemy.exc import IntegrityError
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from werkzeug.utils import secure_filename
@@ -27,6 +28,18 @@ def listar():
 def nuevo():
     if request.method == 'POST':
         try:
+            codigo = request.form['codigo'].strip()
+            nombre = request.form['nombre'].strip()
+
+            # Validar que el código no exista (constraint UNIQUE en la BD)
+            existente = Producto.query.filter_by(codigo=codigo).first()
+            if existente:
+                msg = f'Ya existe un producto con el código "{codigo}".'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
+                return render_template('inventario/form.html')
+
             # Precio de compra (obligatorio)
             precio_compra = float(request.form['precio_compra'])
             # Precio de venta 1 (obligatorio)
@@ -39,8 +52,8 @@ def nuevo():
                 flash(msg, 'error')
                 return render_template('inventario/form.html')
             producto = Producto(
-                codigo=request.form['codigo'].strip(),
-                nombre=request.form['nombre'].strip(),
+                codigo=codigo,
+                nombre=nombre,
                 # Guardamos explícitamente precio de compra; el alias precio_unitario sigue existiendo
                 precio_compra=precio_compra,
                 precio_1=precio_1,
@@ -48,7 +61,15 @@ def nuevo():
                 stock=int(request.form.get('stock', 0))
             )
             db.session.add(producto)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                msg = f'Ya existe un producto con el código "{codigo}".'
+                if _is_xhr():
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, 'error')
+                return render_template('inventario/form.html')
             if _is_xhr():
                 return jsonify({'success': True, 'message': 'Producto creado correctamente'})
             flash('Producto creado correctamente', 'success')
@@ -156,7 +177,11 @@ def importar():
             header_row = None
             for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=20), 1):
                 valores = [str(cell.value).lower() if cell.value else '' for cell in row]
-                if any('nombre' in v or 'producto' in v for v in valores):
+                valores_normalizados = [
+                    valor.replace('ó', 'o').replace('í', 'i').replace('é', 'e').replace('á', 'a').replace('ú', 'u').replace(' ', '_')
+                    for valor in valores if valor
+                ]
+                if 'nombre' in valores_normalizados and ('codigo' in valores_normalizados or 'precio_compra' in valores_normalizados):
                     header_row = row_idx
                     break
             
@@ -399,14 +424,14 @@ def exportar():
     header_font = Font(bold=True, color='FFFFFF', size=11)
     center_align = Alignment(horizontal='center', vertical='center')
     
-    # Encabezados
+    # Encabezados alineados con la plantilla de importación
     headers = [
-        'Código',
         'Nombre',
-        'Precio 1',
-        'Precio 2',
+        'Código',
+        'Precio_compra',
+        'Precio_1',
+        'Precio_2',
         'Stock',
-        'Fecha Registro'
     ]
     ws.append(headers)
     
@@ -418,17 +443,27 @@ def exportar():
     
     # Datos
     for producto in productos:
+        # Precio de compra: usamos el campo dedicado si existe, o el alias precio_unitario
+        precio_compra = getattr(producto, 'precio_compra', None)
+        if not precio_compra:
+            precio_compra = getattr(producto, 'precio_unitario', 0) or 0
+
+        precio_1 = producto.precio_1 if producto.precio_1 is not None else ''
+        precio_2 = producto.precio_2 if producto.precio_2 is not None else ''
+
+        # Precio 3 es opcional: solo se llenará si el modelo/capa de datos lo define
+
         ws.append([
-            producto.codigo,
             producto.nombre,
-            producto.precio_1 or producto.precio_unitario or 0,
-            producto.precio_2 if producto.precio_2 is not None else '',
+            producto.codigo,
+            precio_compra,
+            precio_1,
+            precio_2,
             producto.stock,
-            producto.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if producto.fecha_registro else ''
         ])
     
     # Ajustar ancho de columnas
-    column_widths = [18, 30, 14, 12, 10, 18]
+    column_widths = [30, 18, 14, 14, 14, 10]
     for col_idx, width in enumerate(column_widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
     

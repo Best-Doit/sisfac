@@ -68,11 +68,15 @@
     </table>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputBusqueda = document.getElementById('busqueda-clientes');
-    const filas = document.querySelectorAll('.fila-cliente');
-    
-    if (inputBusqueda && filas.length > 0) {
+(function() {
+    function initClienteSearch() {
+        const inputBusqueda = document.getElementById('busqueda-clientes');
+        const filas = document.querySelectorAll('.fila-cliente');
+        
+        if (!inputBusqueda || filas.length === 0) {
+            return;
+        }
+
         inputBusqueda.addEventListener('input', function() {
             const busqueda = this.value.toLowerCase().trim();
             let filasVisibles = 0;
@@ -103,6 +107,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initClienteSearch);
+    } else {
+        initClienteSearch();
+    }
+})();
 </script>
 {% endblock %}

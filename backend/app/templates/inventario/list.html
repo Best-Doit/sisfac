@@ -74,11 +74,15 @@
     </table>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputBusqueda = document.getElementById('busqueda-inventario');
-    const filas = document.querySelectorAll('.fila-producto');
-    
-    if (inputBusqueda && filas.length > 0) {
+(function() {
+    function initInventarioSearch() {
+        const inputBusqueda = document.getElementById('busqueda-inventario');
+        const filas = document.querySelectorAll('.fila-producto');
+        
+        if (!inputBusqueda || filas.length === 0) {
+            return;
+        }
+
         inputBusqueda.addEventListener('input', function() {
             const busqueda = this.value.toLowerCase().trim();
             var filasVisibles = 0;
@@ -109,6 +113,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initInventarioSearch);
+    } else {
+        initInventarioSearch();
+    }
+})();
 </script>
 {% endblock %}

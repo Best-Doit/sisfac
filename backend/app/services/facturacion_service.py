@@ -81,10 +81,13 @@ class FacturacionService:
             else:
                 talonario_id = None
             
-            # Si no se envía número de factura, generarlo automáticamente
-            if not numero_factura:
-                talonario = Talonario.query.get(talonario_id) if talonario_id else None
-
+            talonario = Talonario.query.get(talonario_id) if talonario_id else None
+            
+            # Regla:
+            # - Si hay talonario seleccionado, SIEMPRE generamos el número automáticamente
+            #   usando el talonario (ignoramos el número escrito a mano).
+            # - Si NO hay talonario, usamos el número que venga en el formulario.
+            if talonario:
                 # region agent log
                 _agent_debug_log_facturacion(
                     "H3",
@@ -97,23 +100,24 @@ class FacturacionService:
                 )
                 # endregion
 
-                if talonario:
-                    numero_factura = talonario.obtener_siguiente_numero()
+                numero_factura = talonario.obtener_siguiente_numero()
 
-                    # region agent log
-                    _agent_debug_log_facturacion(
-                        "H3",
-                        "numero_factura_generado_en_servicio",
-                        {
-                            "talonario_id": talonario_id,
-                            "numero_factura_final": numero_factura,
-                        },
-                    )
-                    # endregion
+                # region agent log
+                _agent_debug_log_facturacion(
+                    "H3",
+                    "numero_factura_generado_en_servicio",
+                    {
+                        "talonario_id": talonario_id,
+                        "numero_factura_final": numero_factura,
+                    },
+                )
+                # endregion
             
             # Validar que el número de factura exista y no se repita
             if not numero_factura:
-                return None, 'No se pudo generar un número de factura. Verifique el talonario seleccionado.'
+                if talonario:
+                    return None, 'No se pudo generar un número de factura desde el talonario seleccionado.'
+                return None, 'Debe indicar un número de factura.'
             
             if Factura.query.filter_by(numero_factura=numero_factura).first():
                 return None, f'El número de factura {numero_factura} ya existe'
@@ -202,7 +206,7 @@ class FacturacionService:
         Args:
             con_numeros_sugeridos: si True, incluye números sugeridos para talonarios
         """
-        clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
+        clientes = Cliente.query.order_by(Cliente.nombre).all()
         productos = Producto.query.filter_by(activo=True).order_by(Producto.stock.desc(), Producto.nombre).all()
         talonarios = Talonario.query.filter_by(activo=True).order_by(Talonario.id.desc()).all()
         

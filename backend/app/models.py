@@ -45,11 +45,6 @@ class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(200), nullable=False)
     ruc_ci = db.Column(db.String(50))
-    direccion = db.Column(db.String(500))
-    telefono = db.Column(db.String(50))
-    email = db.Column(db.String(100))
-    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    activo = db.Column(db.Boolean, default=True)
     
     # Relaciones
     facturas = db.relationship('Factura', backref='cliente', lazy=True)
@@ -58,11 +53,7 @@ class Cliente(db.Model):
         return {
             'id': self.id,
             'nombre': self.nombre,
-            'ruc_ci': self.ruc_ci,
-            'direccion': self.direccion,
-            'telefono': self.telefono,
-            'email': self.email,
-            'fecha_registro': self.fecha_registro.isoformat() if self.fecha_registro else None
+            'ruc_ci': self.ruc_ci
         }
 
 class Producto(db.Model):
@@ -213,11 +204,10 @@ class Talonario(db.Model):
         # endregion
 
         _, numero_actual, numero_fin = self._get_numeros_safe()
-        if numero_actual < numero_fin:
+        if numero_actual <= numero_fin:
             numero = f"{self.prefijo}-{numero_actual:04d}"
             self.numero_actual = numero_actual + 1
             db.session.add(self)
-            db.session.commit()
 
             # region agent log
             _agent_debug_log_talonario(
@@ -237,7 +227,7 @@ class Talonario(db.Model):
     def sugerir_siguiente_numero(self):
         """Sugiere el siguiente número sin incrementarlo (solo para mostrar)"""
         _, numero_actual, numero_fin = self._get_numeros_safe()
-        if numero_actual < numero_fin:
+        if numero_actual <= numero_fin:
             numero_sugerido = f"{self.prefijo}-{numero_actual:04d}"
 
             # region agent log

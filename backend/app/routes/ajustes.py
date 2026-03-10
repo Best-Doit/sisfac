@@ -302,26 +302,21 @@ def exportar_datos():
     try:
         wb = Workbook()
         
-        # Hoja de Clientes
+        # Hoja de Clientes (solo ID, Nombre y CI/RUC)
         ws_clientes = wb.active
         ws_clientes.title = "Clientes"
-        headers = ['ID', 'Nombre', 'CI/RUC', 'Dirección', 'Teléfono', 'Email', 'Activo', 'Fecha Registro']
+        headers = ['ID', 'Nombre', 'CI/RUC']
         ws_clientes.append(headers)
         for cliente in Cliente.query.all():
             ws_clientes.append([
                 cliente.id,
                 cliente.nombre,
-                cliente.ruc_ci or '',
-                cliente.direccion or '',
-                cliente.telefono or '',
-                cliente.email or '',
-                'Sí' if cliente.activo else 'No',
-                cliente.fecha_registro.strftime('%d/%m/%Y %H:%M:%S') if cliente.fecha_registro else ''
+                cliente.ruc_ci or ''
             ])
         
-        # Hoja de Productos
+        # Hoja de Productos (sin columna Activo, pero manteniendo Fecha Registro para seguimiento)
         ws_productos = wb.create_sheet("Productos")
-        headers = ['ID', 'Código', 'Nombre', 'Precio Principal', 'Precio P1', 'Precio P2', 'Stock', 'Activo', 'Fecha Registro']
+        headers = ['ID', 'Código', 'Nombre', 'Precio_compra', 'Precio_1', 'Precio_2', 'Stock', 'Activo', 'Fecha Registro']
         ws_productos.append(headers)
         for producto in Producto.query.all():
             ws_productos.append([
@@ -554,20 +549,18 @@ def importar_datos():
             'ci_ruc': 'ruc_ci',
             'ci': 'ruc_ci',
             'ruc': 'ruc_ci',
-            'direccion': 'direccion',
-            'telefono': 'telefono',
-            'email': 'email',
-            'activo': 'activo',
-            'fecha_registro': 'fecha_registro'
         }
         productos_map = {
             'id': 'id',
             'codigo': 'codigo',
             'nombre': 'nombre',
+            'precio_compra': 'precio_compra',
             'precio_principal': 'precio_principal',
             'precio_unitario': 'precio_principal',
             'precio_1': 'precio_1',
+            'precio_p1': 'precio_1',
             'precio_2': 'precio_2',
+            'precio_p2': 'precio_2',
             'stock': 'stock',
             'activo': 'activo',
             'fecha_registro': 'fecha_registro'
@@ -623,7 +616,7 @@ def importar_datos():
         db.session.query(Talonario).delete(synchronize_session=False)
         db.session.query(Configuracion).delete(synchronize_session=False)
         
-        # Importar Clientes
+        # Importar Clientes (solo ID, Nombre y CI/RUC)
         for row in _leer_filas(wb['Clientes'], clientes_map):
             nombre = str(row.get('nombre') or '').strip()
             if not nombre:
@@ -631,17 +624,10 @@ def importar_datos():
             cliente = Cliente(
                 nombre=nombre,
                 ruc_ci=str(row.get('ruc_ci') or '').strip(),
-                direccion=str(row.get('direccion') or '').strip(),
-                telefono=str(row.get('telefono') or '').strip(),
-                email=str(row.get('email') or '').strip()
             )
             row_id = _parse_int(row.get('id'))
             if row_id is not None:
                 cliente.id = row_id
-            fecha_registro = _parse_datetime(row.get('fecha_registro'))
-            if fecha_registro:
-                cliente.fecha_registro = fecha_registro
-            cliente.activo = _parse_bool(row.get('activo'), True)
             db.session.add(cliente)
         
         # Importar Productos
@@ -651,10 +637,15 @@ def importar_datos():
             if not codigo or not nombre:
                 errores.append('Productos: falta Código o Nombre en una fila')
                 continue
+            precio_compra = _parse_float(row.get('precio_compra'))
             precio_principal = _parse_float(row.get('precio_principal'))
             precio_1 = _parse_float(row.get('precio_1'))
             precio_2 = _parse_float(row.get('precio_2'))
-            precio_unitario = precio_principal if precio_principal is not None else (precio_1 if precio_1 is not None else 0.0)
+            precio_unitario = (
+                precio_compra
+                if precio_compra is not None else
+                (precio_principal if precio_principal is not None else (precio_1 if precio_1 is not None else 0.0))
+            )
             producto = Producto(
                 codigo=codigo,
                 nombre=nombre,

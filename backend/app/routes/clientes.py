@@ -11,7 +11,7 @@ bp = Blueprint('clientes', __name__)
 @bp.route('/')
 def listar():
     q = request.args.get('q', '')
-    clientes = Cliente.query.filter_by(activo=True)
+    clientes = Cliente.query
     if q:
         clientes = clientes.filter(Cliente.nombre.contains(q) | 
                                   Cliente.ruc_ci.contains(q))
@@ -65,7 +65,7 @@ def eliminar(id):
     if cliente.facturas:
         flash('No se puede eliminar un cliente con facturas asociadas', 'error')
         return redirect(url_for('clientes.listar'))
-    cliente.activo = False
+    db.session.delete(cliente)
     db.session.commit()
     flash('Cliente eliminado correctamente', 'success')
     return redirect(url_for('clientes.listar'))
@@ -79,7 +79,7 @@ def historial(id):
 @bp.route('/api/buscar')
 def api_buscar():
     q = request.args.get('q', '')
-    clientes = Cliente.query.filter_by(activo=True)
+    clientes = Cliente.query
     if q:
         clientes = clientes.filter(Cliente.nombre.contains(q))
     clientes = clientes.limit(10).all()
@@ -113,7 +113,11 @@ def importar():
             header_row = None
             for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=20), 1):
                 valores = [str(cell.value).lower() if cell.value else '' for cell in row]
-                if any('nombre' in v for v in valores):
+                valores_normalizados = [
+                    valor.replace('ó', 'o').replace('é', 'e').replace('í', 'i').replace(' ', '_')
+                    for valor in valores if valor
+                ]
+                if 'nombre' in valores_normalizados and any(v in valores_normalizados for v in ('ci', 'cedula', 'ruc', 'ci/ruc', 'ci_ruc')):
                     header_row = row_idx
                     break
             
@@ -170,9 +174,9 @@ def importar():
                                 ci = None
                     cliente_existente = None
                     if ci:
-                        cliente_existente = Cliente.query.filter_by(ruc_ci=ci, activo=True).first()
+                        cliente_existente = Cliente.query.filter_by(ruc_ci=ci).first()
                     if not cliente_existente:
-                        cliente_existente = Cliente.query.filter_by(nombre=nombre, activo=True).first()
+                        cliente_existente = Cliente.query.filter_by(nombre=nombre).first()
                     if cliente_existente:
                         cliente_existente.nombre = nombre
                         cliente_existente.ruc_ci = ci or ''

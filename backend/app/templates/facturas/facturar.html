@@ -275,7 +275,13 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <span class="text-sm font-semibold text-gray-800" x-text="`Bs. ${item.precio.toFixed(2)}`"></span>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   x-model="item.precio"
+                                                   @input="calcularFila(index)"
+                                                   class="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                                                   :aria-label="`Precio unitario para ${item.nombre}`">
                                         </div>
                                         <input type="hidden" :name="`precio_unitario[]`" :value="item.precio">
                                     </td>

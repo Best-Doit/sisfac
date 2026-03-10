@@ -9,7 +9,8 @@
     <form method="POST" class="min-h-0" x-data="facturaForm({
         numeroFactura: '{{ numero_factura_sugerido or '' }}',
         talonarioId: '{{ talonario_seleccionado_id or '' }}',
-        clienteId: '{{ cliente_seleccionado_id or '' }}'
+        clienteId: '{{ cliente_seleccionado_id or '' }}',
+        clientesIds: {{ (clientes|map(attribute='id')|list)|tojson }}
     })">
         <!-- Paso 1: Información de la Factura -->
         <div x-show="paso === 1" class="space-y-3 sm:space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 sm:overflow-visible sm:max-h-none">
@@ -119,7 +120,7 @@
                                 <td class="px-4 py-3 text-sm text-gray-500">Bs. {{ "%.2f"|format(producto.precio_unitario) }}</td>
                                 <td class="px-4 py-3">
                                     <button type="button" 
-                                            @click="agregarAlCarrito({{ producto.id }}, '{{ producto.codigo }}', '{{ producto.nombre }}', {{ producto.precio_unitario }}, {{ producto.precio_1 or producto.precio_unitario }}, {{ producto.precio_2 or producto.precio_unitario }}, {{ producto.precio_3 or producto.precio_unitario }}, {{ producto.stock }})"
+                                            @click="agregarAlCarrito({{ producto.id }}, '{{ producto.codigo }}', '{{ producto.nombre }}', {{ producto.precio_unitario }}, {{ producto.precio_1 or producto.precio_unitario }}, {{ producto.precio_2 if producto.precio_2 is not none else 'null' }}, {{ producto.precio_3 if producto.precio_3 is defined and producto.precio_3 is not none else 'null' }}, {{ producto.stock }})"
                                             class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 text-sm">
                                         ➕ Agregar
                                     </button>
@@ -227,11 +228,13 @@
                                                class="cursor-pointer">
                                     </td>
                                     <td class="border border-gray-300 px-3 py-2 text-center">
-                                        <input type="radio" :name="`precio_nivel_${index}`" 
-                                               value="3" 
-                                               x-model="item.precioSeleccionado"
-                                               @change="actualizarPrecio(index)"
-                                               class="cursor-pointer">
+                                        <template x-if="item.precio_3 !== null && item.precio_3 !== undefined">
+                                            <input type="radio" :name="`precio_nivel_${index}`" 
+                                                   value="3" 
+                                                   x-model="item.precioSeleccionado"
+                                                   @change="actualizarPrecio(index)"
+                                                   class="cursor-pointer">
+                                        </template>
                                     </td>
                                     <td class="border border-gray-300 px-3 py-2">
                                         <input type="number" step="0.01" min="0" 
@@ -282,7 +285,15 @@ function facturaForm(initial = {}) {
         paso: 1,
         numeroFactura: initial.numeroFactura || '',
         talonarioId: initial.talonarioId || '',
-        clienteId: initial.clienteId || '',
+        // Si no viene un cliente preseleccionado, elegir uno aleatorio
+        clienteId: (function () {
+            if (initial.clienteId) return initial.clienteId;
+            if (Array.isArray(initial.clientesIds) && initial.clientesIds.length > 0) {
+                const randomIndex = Math.floor(Math.random() * initial.clientesIds.length);
+                return String(initial.clientesIds[randomIndex]);
+            }
+            return '';
+        })(),
         fechaEmision: '',
         busqueda: '',
         carrito: [],
@@ -337,7 +348,7 @@ function facturaForm(initial = {}) {
                 precio_principal: precioPrincipal,
                 precio_1: precio1,
                 precio_2: precio2,
-                precio_3: precio3,
+                precio_3: (precio3 !== null && precio3 !== undefined && precio3 !== '' && precio3 !== 'null') ? parseFloat(precio3) : null,
                 stock: stock,
                 cantidad: 1,
                 precioSeleccionado: 'principal',
@@ -385,7 +396,7 @@ function facturaForm(initial = {}) {
                 item.precio = item.precio_1;
             } else if (item.precioSeleccionado === '2') {
                 item.precio = item.precio_2;
-            } else if (item.precioSeleccionado === '3') {
+            } else if (item.precioSeleccionado === '3' && item.precio_3 !== null && item.precio_3 !== undefined) {
                 item.precio = item.precio_3;
             }
             this.calcularFila(index);

@@ -2,6 +2,29 @@
 
 Registro de cambios y mejoras del sistema de facturación.
 
+## [10.6.4] - 2026-03-09
+
+### Cambios principales
+
+- Corregida la numeracion ascendente de facturas por talonario.
+- Corregido el uso del ultimo numero disponible del rango del talonario.
+- Eliminado el consumo prematuro del numero de factura antes de completar la transaccion.
+- Agregadas validaciones de rango para talonarios.
+- Ajustadas las plantillas y exportaciones de Excel para mantener consistencia entre importacion y exportacion.
+- Corregido el modal de importacion en Ajustes para enviar a la ruta correcta.
+- Simplificado el README para usuarios finales.
+
+### Mejoras funcionales
+
+- Mejor deteccion de encabezados en importaciones de clientes e inventario.
+- Exportacion de inventario alineada con la plantilla real de importacion.
+- Importacion global preparada para reconocer variantes de encabezados de productos.
+
+### Notas
+
+- Version recomendada para publicar en GitHub Releases.
+- Antes de publicar, generar los instaladores desde los scripts de empaquetado del proyecto.
+
 ## [Versión Actual] - 2024
 
 ### 🎯 Cambios Principales

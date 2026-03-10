@@ -76,7 +76,8 @@ def nueva():
         talonarios=datos['talonarios'],
         cliente_seleccionado_id=cliente_seleccionado_id,
         talonario_seleccionado_id=talonario_por_defecto.id if talonario_por_defecto else None,
-        numero_factura_sugerido=numero_factura_sugerido or ''
+        numero_factura_sugerido=numero_factura_sugerido or '',
+        clientes_ids=[c.id for c in datos['clientes']],
     )
 
 @bp.route('/<int:id>')
@@ -115,7 +116,7 @@ def anular(id):
 
 @bp.route('/api/clientes')
 def api_clientes():
-    clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
+    clientes = Cliente.query.order_by(Cliente.nombre).all()
     return jsonify([c.to_dict() for c in clientes])
 
 @bp.route('/facturar', methods=['GET', 'POST'])

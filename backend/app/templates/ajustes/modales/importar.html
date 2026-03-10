@@ -3,15 +3,18 @@
 {% block content %}
 <div id="form-fragment" class="p-0">
     <p class="text-sm text-gray-600 mb-3">Seleccione un archivo Excel (.xlsx o .xls) exportado previamente por el sistema. Debe contener las hojas: Clientes, Productos, Talonarios, Facturas y DetallesFactura. <strong>Los datos actuales serán reemplazados.</strong></p>
-    <form method="POST" action="{{ url_for('ajustes.importar_datos') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('ajustes.importar_datos') }}" enctype="multipart/form-data"
+          x-data="{ loading: false }"
+          @submit.prevent="loading = true; const fd = new FormData($event.target); fetch('{{ url_for('ajustes.importar_datos') }}', { method: 'POST', body: fd }).then(r => { if (r.redirected) { window.location.href = r.url; return null; } return r.text(); }).then(html => { if (html !== null) { loading = false; document.getElementById('form-modal-overlay').style.display = 'none'; window.location.reload(); } }).catch(err => { loading = false; window.notify('Error: ' + err.message, 'error'); });">
         <div class="mb-3">
             <input type="file" name="archivo" accept=".xlsx,.xls" required
                    class="block w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700">
         </div>
         <div class="flex gap-2">
-            <button type="submit"
+            <button type="submit" :disabled="loading"
                     class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium text-sm">
-                Importar datos
+                <span x-show="!loading">Importar datos</span>
+                <span x-show="loading">Importando...</span>
             </button>
             <button type="button" onclick="document.getElementById('form-modal-overlay').style.display='none'"
                     class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm">Cancelar</button>

@@ -412,27 +412,37 @@
                     bodyEl.innerHTML = frag ? frag.innerHTML : (doc.querySelector('form') ? doc.querySelector('form').outerHTML : '');
                     var form = bodyEl.querySelector('form');
                     if (form) {
-                        form.action = url;
-                        [].slice.call(bodyEl.querySelectorAll('a[href="/clientes"], a[href="/inventario"], a[href="/talonarios"]')).forEach(function(link) {
-                            link.href = '#'; link.onclick = function(e) { e.preventDefault(); closeModal(); };
-                        });
-                        form.onsubmit = function(e) {
-                            e.preventDefault();
-                            var action = form.action;
-                            var fd = new FormData(form);
-                            fetch(action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                                .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, status: res.status, data: data }; }).catch(function() { return { ok: false, data: { message: 'Error en el servidor' } }; }); })
-                                .then(function(result) {
-                                    if (result.ok && result.data && result.data.success) {
-                                        closeModal();
-                                        if (window.notify) window.notify(result.data.message, 'success');
-                                        window.location.reload();
-                                    } else {
-                                        if (window.notify) window.notify((result.data && result.data.message) || 'Error', 'error');
-                                    }
-                                })
-                                .catch(function() { if (window.notify) window.notify('Error de conexión', 'error'); });
-                        };
+                        // Si el formulario ya tiene un manejador personalizado (@submit.prevent o similar),
+                        // no sobreescribimos su comportamiento (por ejemplo, modales de Ajustes).
+                        var hasCustomSubmit =
+                            form.hasAttribute('@submit.prevent') ||
+                            form.hasAttribute('@submit') ||
+                            form.hasAttribute('x-on:submit') ||
+                            form.getAttribute('x-on:submit.prevent');
+
+                        if (!hasCustomSubmit) {
+                            form.action = url;
+                            [].slice.call(bodyEl.querySelectorAll('a[href="/clientes"], a[href="/inventario"], a[href="/talonarios"]')).forEach(function(link) {
+                                link.href = '#'; link.onclick = function(e) { e.preventDefault(); closeModal(); };
+                            });
+                            form.onsubmit = function(e) {
+                                e.preventDefault();
+                                var action = form.action;
+                                var fd = new FormData(form);
+                                fetch(action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                                    .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, status: res.status, data: data }; }).catch(function() { return { ok: false, data: { message: 'Error en el servidor' } }; }); })
+                                    .then(function(result) {
+                                        if (result.ok && result.data && result.data.success) {
+                                            closeModal();
+                                            if (window.notify) window.notify(result.data.message, 'success');
+                                            window.location.reload();
+                                        } else {
+                                            if (window.notify) window.notify((result.data && result.data.message) || 'Error', 'error');
+                                        }
+                                    })
+                                    .catch(function() { if (window.notify) window.notify('Error de conexión', 'error'); });
+                            };
+                        }
                     }
                     overlay.style.display = 'flex';
                     if (window.Alpine && typeof window.Alpine.initTree === 'function') {

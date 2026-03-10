@@ -1,167 +1,93 @@
-# SISFAC - Sistema de Facturación
+# SISFAC
 
-Sistema de facturación de escritorio (interfaz web embebida) para pequeños negocios.  
-Construido con Flask, Tailwind CSS, Alpine.js y Electron.
+Sistema de facturacion para escritorio orientado a pequenos negocios.
 
-## 🚀 Características
+SISFAC permite:
+- registrar clientes
+- administrar inventario
+- emitir facturas con numeracion por talonario
+- exportar e importar datos por Excel
+- crear y restaurar backups
 
-- ✅ Gestión de clientes, inventario y facturación
-- ✅ Múltiples precios por producto (Principal, P1, P2)
-- ✅ Dashboard con métricas
-- ✅ Sistema de backups y restauración
-- ✅ Importación masiva desde Excel
-- ✅ Búsqueda predictiva
-- ✅ Interfaz moderna y responsive
+## Descarga
 
-## 📋 Requisitos
-
-- Python 3.9+ (recomendado: 3.12+)
-- Node.js y npm (para empaquetado)
-
-## 🔧 Instalación
-
-Los scripts automatizados instalan todas las dependencias necesarias en el proyecto, incluso si ya están instaladas en el sistema.
-
-## ⬇️ Descargas
-
-Los instaladores oficiales se publican en la sección **Releases** del repositorio:
+Los instaladores oficiales se publican en GitHub Releases:
 
 https://github.com/Best-Doit/sisfac/releases
 
-### 🪟 Windows
+## Uso Rapido
 
-**Iniciar aplicación:**
+### Windows
 
-En **CMD (Símbolo del sistema):**
+1. Descarga el instalador desde `Releases`.
+2. Instala SISFAC.
+3. Abre la aplicacion desde el acceso directo.
+
+Si estas usando el proyecto en modo desarrollo:
+
+```powershell
+.\start.ps1
+```
+
+O en CMD:
+
 ```cmd
 start.bat
 ```
 
-En **PowerShell:**
-```powershell
-.\start.ps1
-```
-O si prefieres usar el .bat:
-```powershell
-.\start.bat
-```
+### Linux
 
-Este script:
-- ✅ Crea el entorno virtual (`venv`) si no existe
-- ✅ Instala todas las dependencias de Python
-- ✅ Inicia el servidor Flask en `http://localhost:5000`
+Para desarrollo:
 
-**Empaquetar instalador .exe:**
-
-En **PowerShell:**
-```powershell
-.\empaquetar.ps1
-```
-
-En **CMD:**
-```cmd
-empaquetar.bat
-```
-
-Requisitos para empaquetar en Windows:
-- ✅ Python 3.9+ (con venv)
-- ✅ Node.js + npm (incluye `npx`)
-
-### 🐧 Linux
-
-**Instalación completa (recomendado):**
-```bash
-bash scripts/preparar_todo_linux.sh
-```
-Este script instala y configura automáticamente:
-- ✅ Python y entorno virtual (`venv`)
-- ✅ Todas las dependencias de Python (Flask, SQLAlchemy, etc.)
-- ✅ Node.js (si no está instalado, requiere sudo)
-- ✅ Electron y electron-builder en el proyecto
-
-**Iniciar aplicación:**
 ```bash
 ./start.sh
 ```
 
-**Empaquetar aplicación:**
+Para empaquetar:
+
 ```bash
 ./empaquetar.sh
 ```
 
-## 📦 Scripts Disponibles
+## Lo Mas Importante
 
-### Windows
+- `P1` es el precio de venta mas alto.
+- `P2` es un precio alternativo mas bajo.
+- La numeracion de facturas puede manejarse por talonario.
+- El sistema puede exportar e importar datos por Excel.
+- Antes de operaciones delicadas, usa backups.
 
-**Scripts de uso:**
-- `start.bat` - Script para CMD (Símbolo del sistema)
-- `start.ps1` - Script para PowerShell (recomendado)
-  
-Ambos scripts crean venv (si no existe), instalan dependencias e inician la aplicación
+## Requisitos Para Desarrollo
 
-### Linux
+- Python 3.9 o superior
+- Node.js y npm
 
-**Scripts de instalación:**
-- `scripts/preparar_todo_linux.sh` - **Todo en uno**: Instala Python, Node.js y Electron
-- `scripts/instalar_nodejs_electron_linux.sh` - Solo Node.js (si falta) y Electron en el proyecto
+## Estructura
 
-**Scripts de uso:**
-- `./start.sh` - Crea venv (si no existe), instala dependencias e inicia la aplicación
-- `./empaquetar.sh` - Compila backend con PyInstaller y empaqueta con Electron
-
-**Nota:** Los scripts siempre instalan las dependencias en el proyecto, incluso si ya están instaladas en el sistema.
-
-## 🎯 Uso Rápido
-
-1. **Preparar entorno:** Ejecuta el script "todo en uno"
-   ```bash
-   bash scripts/preparar_todo_linux.sh
-   ```
-   
-2. **Iniciar aplicación:**
-   ```bash
-   ./start.sh
-   ```
-   
-3. **Acceder:** Abre `http://localhost:5000` en tu navegador
-
-**Importante:** Los scripts instalan todas las dependencias necesarias en el proyecto. No necesitas tener Python o Node.js instalados globalmente (aunque ayuda para la primera instalación de Node.js).
-
-## 📁 Estructura
-
-```
+```text
 SISFAC/
-├── backend/          # Backend Flask
-├── electron/         # Aplicación Electron
-├── scripts/          # Scripts automatizados
-├── documentacion/    # Documentación completa
-└── requirements.txt   # Dependencias Python
+|-- backend/
+|-- electron/
+|-- documentacion/
+|-- requirements.txt
+|-- start.bat
+|-- start.ps1
+|-- start.sh
 ```
 
-## 📚 Documentación
+## Documentacion
 
-Toda la documentación está en el directorio [`documentacion/`](./documentacion/):
+La documentacion tecnica esta en [documentacion/README.md](./documentacion/README.md).
 
-- [📖 Índice de Documentación](./documentacion/README.md) - Guía completa
-- [🏗️ Arquitectura Técnica](./documentacion/ARQUITECTURA_TECNICA.md) - Estructura del sistema
-- [📦 Guía de Empaquetado](./documentacion/EMPAQUETADO.md) - Crear ejecutables
-- [🔒 Empaquetado Seguro](./documentacion/EMPAQUETADO_SEGURO.md) - Protección de datos
-- [📝 Cambios Recientes](./documentacion/CAMBIOS_RECIENTES.md) - Últimas actualizaciones
+Archivos utiles:
+- [documentacion/CHANGELOG.md](./documentacion/CHANGELOG.md)
+- [documentacion/EMPAQUETADO.md](./documentacion/EMPAQUETADO.md)
+- [documentacion/ARQUITECTURA_TECNICA.md](./documentacion/ARQUITECTURA_TECNICA.md)
 
-## 📄 Licencia
+## Licencia
 
-**Uso no comercial**
+Uso no comercial.
 
-Permisos: Ver, estudiar, usar para fines personales/educativos, modificar y compartir con atribución.  
-Restricciones: No se permite uso comercial sin autorización.
+## Creditos
 
-## 👤 Créditos
-
-**Desarrollado por:** Best_Doit  
-**TikTok:** [@best_doit](https://www.tiktok.com/@best_doit)
-
----
-
-## ⚠️ Disclaimer
-
-Este software se proporciona "tal cual", sin garantías de ningún tipo.
+Desarrollado por Best_Doit.

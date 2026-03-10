@@ -1,6 +1,6 @@
 {
   "name": "sisfac",
-  "version": "1.0.0",
+  "version": "10.6.4",
   "description": "SISFAC es un sistema de facturación de escritorio (interfaz web embebida) pensado para pequeños negocios.   La interfaz está construida con Flask (templates Jinja2), Tailwind CSS y Alpine.js; el empaquetado final a escritorio se realiza con Electron (según documentación técnica en `documentacion/`).",
   "main": "index.js",
   "scripts": {

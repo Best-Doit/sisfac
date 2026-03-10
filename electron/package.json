@@ -1,6 +1,6 @@
 {
   "name": "sisfac-desktop",
-  "version": "9.6.3",
+  "version": "10.6.4",
   "description": "Sistema de Facturación y Gestión de Inventario - AppImage Autónomo",
   "main": "main.js",
   "homepage": "https://github.com/sisfac/sisfac",
