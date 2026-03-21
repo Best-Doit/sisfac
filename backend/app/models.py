@@ -1,43 +1,6 @@
 from app import db
 from datetime import datetime
 
-# region agent log
-import json as _agent_json  # solo para depuración de esta sesión
-import time as _agent_time  # solo para depuración de esta sesión
-import os as _agent_os  # solo para depuración de esta sesión
-
-
-def _agent_debug_log_talonario(hypothesis_id, message, data):
-    """
-    Log compacto en NDJSON para debug de Talonario.
-    No debe usarse fuera de esta sesión de depuración.
-    """
-    try:
-        ts_ms = int(_agent_time.time() * 1000)
-        entry = {
-            "sessionId": "fee812",
-            "id": f"log_{ts_ms}_{hypothesis_id}",
-            "timestamp": ts_ms,
-            "location": "backend/app/models.py:Talonario",
-            "message": message,
-            "data": data,
-            "runId": "pre-fix",
-            "hypothesisId": hypothesis_id,
-        }
-        # Asegurar que escribimos en la raíz del workspace: debug-fee812.log
-        base_dir = _agent_os.path.abspath(
-            _agent_os.path.join(_agent_os.path.dirname(__file__), "..", "..")
-        )
-        log_path = _agent_os.path.join(base_dir, "debug-fee812.log")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(_agent_json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        # La depuración nunca debe romper el flujo de la app
-        pass
-
-
-# endregion
-
 
 class Cliente(db.Model):
     __tablename__ = 'clientes'
@@ -189,38 +152,11 @@ class Talonario(db.Model):
     
     def obtener_siguiente_numero(self):
         """Obtiene el siguiente número de factura e incrementa el contador"""
-        # region agent log
-        _agent_debug_log_talonario(
-            "H1",
-            "obtener_siguiente_numero_called",
-            {
-                "talonario_id": self.id,
-                "prefijo": self.prefijo,
-                "numero_inicio": self.numero_inicio,
-                "numero_actual": self.numero_actual,
-                "numero_fin": self.numero_fin,
-            },
-        )
-        # endregion
-
         _, numero_actual, numero_fin = self._get_numeros_safe()
         if numero_actual <= numero_fin:
             numero = f"{self.prefijo}-{numero_actual:04d}"
             self.numero_actual = numero_actual + 1
             db.session.add(self)
-
-            # region agent log
-            _agent_debug_log_talonario(
-                "H1",
-                "obtener_siguiente_numero_committed",
-                {
-                    "talonario_id": self.id,
-                    "numero_generado": numero,
-                    "nuevo_numero_actual": self.numero_actual,
-                },
-            )
-            # endregion
-
             return numero
         return None
     
@@ -228,23 +164,7 @@ class Talonario(db.Model):
         """Sugiere el siguiente número sin incrementarlo (solo para mostrar)"""
         _, numero_actual, numero_fin = self._get_numeros_safe()
         if numero_actual <= numero_fin:
-            numero_sugerido = f"{self.prefijo}-{numero_actual:04d}"
-
-            # region agent log
-            _agent_debug_log_talonario(
-                "H2",
-                "sugerir_siguiente_numero_computed",
-                {
-                    "talonario_id": self.id,
-                    "prefijo": self.prefijo,
-                    "numero_actual": numero_actual,
-                    "numero_fin": numero_fin,
-                    "numero_sugerido": numero_sugerido,
-                },
-            )
-            # endregion
-
-            return numero_sugerido
+            return f"{self.prefijo}-{numero_actual:04d}"
         return None
 
 class Configuracion(db.Model):

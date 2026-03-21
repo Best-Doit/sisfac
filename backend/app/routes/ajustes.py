@@ -5,6 +5,7 @@ from app.config import get_database_path, get_backups_dir
 from sqlalchemy import text, func
 import os
 import shutil
+import traceback
 from datetime import datetime, date, timedelta
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
@@ -156,8 +157,6 @@ def descargar_backup(nombre):
 def borrar_datos():
     """Borrar todos los datos de las tablas principales"""
     try:
-        import traceback
-        
         # Detectar si es una llamada AJAX/JSON o un POST normal
         is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
@@ -204,62 +203,34 @@ def borrar_datos():
         except Exception as e:
             print(f"⚠️ Error al deshabilitar foreign keys: {e}")
         
-        # Borrar datos de todas las tablas en el orden correcto (primero las dependientes)
+        # Borrar datos usando SQL directo para evitar conflictos con
+        # relaciones ORM (cascade, backref) en SQLAlchemy 2.x
         try:
-            print("🗑️ Borrando DetalleFactura...")
-            count_detalles = db.session.query(DetalleFactura).count()
-            db.session.query(DetalleFactura).delete(synchronize_session=False)
-            print(f"   Eliminados {count_detalles} detalles de factura")
-            
-            print("🗑️ Borrando Factura...")
-            count_facturas = db.session.query(Factura).count()
-            db.session.query(Factura).delete(synchronize_session=False)
-            print(f"   Eliminadas {count_facturas} facturas")
-            
-            print("🗑️ Borrando Producto...")
-            count_productos = db.session.query(Producto).count()
-            db.session.query(Producto).delete(synchronize_session=False)
-            print(f"   Eliminados {count_productos} productos")
-            
-            print("🗑️ Borrando Cliente...")
-            count_clientes = db.session.query(Cliente).count()
-            db.session.query(Cliente).delete(synchronize_session=False)
-            print(f"   Eliminados {count_clientes} clientes")
-            
-            print("🗑️ Borrando Talonario...")
-            count_talonarios = db.session.query(Talonario).count()
-            db.session.query(Talonario).delete(synchronize_session=False)
-            print(f"   Eliminados {count_talonarios} talonarios")
-            
-            print("💾 Guardando cambios...")
+            tablas = [
+                ('detalle_factura', 'DetalleFactura'),
+                ('facturas', 'Factura'),
+                ('productos', 'Producto'),
+                ('clientes', 'Cliente'),
+                ('talonarios', 'Talonario'),
+            ]
+            for tabla, nombre in tablas:
+                count = db.session.execute(text(f'SELECT COUNT(*) FROM {tabla}')).scalar()
+                db.session.execute(text(f'DELETE FROM {tabla}'))
+                print(f"🗑️ {nombre}: {count} eliminados")
+
             db.session.commit()
             print("✅ Cambios guardados correctamente")
-            
-            # Verificar que se borraron los datos
-            total_restante = (
-                db.session.query(DetalleFactura).count() +
-                db.session.query(Factura).count() +
-                db.session.query(Producto).count() +
-                db.session.query(Cliente).count() +
-                db.session.query(Talonario).count()
-            )
-            if total_restante > 0:
-                print(f"⚠️ Advertencia: Aún quedan {total_restante} registros en las tablas")
-            else:
-                print("✅ Verificación: Todas las tablas están vacías")
-            
+
         except Exception as e:
             db.session.rollback()
             print(f"❌ Error al borrar datos: {e}")
             traceback.print_exc()
             raise e
         finally:
-            # Rehabilitar las foreign keys
             try:
                 db.session.execute(text('PRAGMA foreign_keys = ON'))
-                print("✅ Foreign keys rehabilitadas")
-            except Exception as e:
-                print(f"⚠️ Error al rehabilitar foreign keys: {e}")
+            except Exception:
+                pass
         
         msg_ok = 'Datos borrados correctamente.'
         if backup_creado:
@@ -272,7 +243,6 @@ def borrar_datos():
         flash(msg_ok, 'success')
         return redirect(url_for('ajustes.index'))
     except Exception as e:
-        import traceback
         db.session.rollback()
         msg_err = f'Error al borrar datos: {str(e)}'
         print(f"❌ {msg_err}")
@@ -649,7 +619,7 @@ def importar_datos():
             producto = Producto(
                 codigo=codigo,
                 nombre=nombre,
-                precio_unitario=precio_unitario,
+                precio_compra=precio_unitario,
                 precio_1=precio_1,
                 precio_2=precio_2,
                 stock=_parse_int(row.get('stock'), 0)

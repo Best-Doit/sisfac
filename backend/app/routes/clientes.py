@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_file
 from app import db
 from app.models import Cliente, Factura
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from io import BytesIO
 import os
@@ -105,7 +105,6 @@ def importar():
             return redirect(url_for('clientes.importar'))
         
         try:
-            from openpyxl import load_workbook
             wb = load_workbook(archivo, data_only=True)
             ws = wb.active
             

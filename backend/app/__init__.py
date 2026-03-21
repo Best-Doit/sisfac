@@ -109,8 +109,8 @@ def create_app():
         
         # Retornar error 500
         from flask import jsonify, request, redirect, url_for, flash
-        if request.is_json:
-            return jsonify({'error': 'Error interno del servidor', 'message': error_msg}), 500
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': error_msg}), 500
         else:
             flash(f'Error: {error_msg}', 'error')
             return redirect(url_for('main.index'))

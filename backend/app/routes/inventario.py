@@ -167,9 +167,10 @@ def importar():
         upload_folder = get_uploads_dir()
         filepath = os.path.join(upload_folder, temp_filename)
         archivo.save(filepath)
-        
+
+        wb = None
         try:
-            # Leer archivo Excel
+            # Leer archivo Excel (en Windows el .xlsx queda bloqueado hasta wb.close())
             wb = load_workbook(filepath, data_only=True)
             ws = wb.active
             
@@ -190,7 +191,6 @@ def importar():
                 if _is_xhr():
                     return jsonify({'success': False, 'message': msg}), 400
                 flash(msg, 'error')
-                os.remove(filepath)
                 return redirect(url_for('inventario.importar'))
             
             # Columnas según plantilla: Nombre, Código, Precio_compra, Precio_1, Precio_2, Stock (normalizar acentos y espacios)
@@ -222,7 +222,6 @@ def importar():
                 if _is_xhr():
                     return jsonify({'success': False, 'message': msg}), 400
                 flash(msg, 'error')
-                os.remove(filepath)
                 return redirect(url_for('inventario.importar'))
             
             # Procesar filas
@@ -338,10 +337,7 @@ def importar():
             
             # Guardar cambios
             db.session.commit()
-            
-            # Eliminar archivo temporal
-            os.remove(filepath)
-            
+
             mensaje = f"Importación completada: {productos_creados} creados, {productos_actualizados} actualizados"
             if errores:
                 mensaje += f". {len(errores)} errores."
@@ -352,17 +348,24 @@ def importar():
             else:
                 flash(mensaje, 'success')
             return redirect(url_for('inventario.listar'))
-        
+
         except Exception as e:
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except NameError:
-                pass
+            db.session.rollback()
             if _is_xhr():
                 return jsonify({'success': False, 'message': str(e)}), 400
             flash(f'Error al procesar el archivo: {str(e)}', 'error')
             return redirect(url_for('inventario.importar'))
+        finally:
+            if wb is not None:
+                try:
+                    wb.close()
+                except Exception:
+                    pass
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except OSError:
+                pass
     
     return render_template('inventario/importar.html')
 
